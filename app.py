@@ -6,19 +6,42 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🚀 Artemis")
-st.subheader("Plateforme SaaS d’analyse des lancements spatiaux")
+# SESSION
+if "user" not in st.session_state:
+    st.session_state["user"] = None
 
-st.write(
-    "Analysez l’évolution de l’industrie spatiale, comparez les agences, "
-    "explorez les tendances et accédez à des visualisations interactives."
-)
+# NAVIGATION
+if st.session_state["user"] is None:
 
-st.info("Connectez-vous depuis le menu à gauche pour accéder au dashboard.")
+    pages = [
+        st.Page(
+            "pages/1_Connexion.py",
+            title="Connexion",
+            icon="🔐"
+        )
+    ]
 
-if "user" in st.session_state:
-    st.success(f"Vous êtes connecté avec : {st.session_state['user'].email}")
+else:
 
-with st.sidebar:
-    st.title("🚀 Artemis")
-    st.caption("Plateforme SaaS spatiale")
+    pages = [
+        st.Page(
+            "pages/2_Dashboard.py",
+            title="Dashboard",
+            icon="📊"
+        ),
+
+        st.Page(
+            "pages/3_Map_Mondiale.py",
+            title="Carte mondiale",
+            icon="🌍"
+        ),
+
+        st.Page(
+            "pages/4_Space_Race.py",
+            title="Space Race",
+            icon="🏁"
+        )
+    ]
+
+pg = st.navigation(pages)
+pg.run()

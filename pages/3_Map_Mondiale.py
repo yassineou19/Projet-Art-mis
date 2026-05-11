@@ -3,55 +3,82 @@ import plotly.express as px
 from src.queries import load_data
 
 # PROTECTION
-if "user" not in st.session_state:
-    st.warning("Veuillez vous connecter.")
-    st.stop()
+if st.session_state["user"] is None:
+    st.rerun()
 
-st.set_page_config(
-    page_title="Carte Mondiale",
-    page_icon="🌍",
-    layout="wide"
+user = st.session_state["user"]
+
+# SIDEBAR
+with st.sidebar:
+
+    st.success(
+        f"Connecté : {user.email}"
+    )
+
+    if st.button(
+        "🚪 Se déconnecter",
+        use_container_width=True
+    ):
+
+        st.session_state["user"] = None
+
+        st.rerun()
+
+# PAGE
+st.title(
+    "🌍 Carte Mondiale des Lancements"
 )
 
-st.title("🌍 Activité Spatiale Mondiale")
-
-st.caption(
-    "Visualisation des activités spatiales par pays."
+df = load_data(
+    "select * from launches_map"
 )
 
-# LOAD DATA
-df = load_data("select * from launches_map")
-
-# FILTRE ANNÉE
-years = sorted(df["launch_year"].dropna().unique())
+years = sorted(
+    df["launch_year"]
+    .dropna()
+    .unique()
+)
 
 selected_year = st.selectbox(
     "Choisir une année",
     years
 )
 
-filtered_df = df[df["launch_year"] == selected_year]
+filtered_df = df[
+    df["launch_year"]
+    == selected_year
+]
 
-# MAP
+country_counts = (
+    filtered_df
+    .groupby(
+        [
+            "country",
+            "latitude",
+            "longitude"
+        ]
+    )
+    .size()
+    .reset_index(
+        name="launches"
+    )
+)
+
 fig = px.scatter_geo(
-    filtered_df,
+    country_counts,
     lat="latitude",
     lon="longitude",
+    size="launches",
+    color="country",
     hover_name="country",
-    size_max=30,
-    projection="natural earth",
-    color="country"
+    projection="natural earth"
 )
 
 fig.update_layout(
-    height=700,
-    margin=dict(l=0, r=0, t=50, b=0)
+    height=700
 )
 
-st.plotly_chart(fig, use_container_width=True)
-
-# INSIGHT
-st.info(
-    f"Analyse {selected_year} : "
-    "les États-Unis dominent l’activité spatiale mondiale."
+st.plotly_chart(
+    fig,
+    use_container_width=True
 )
