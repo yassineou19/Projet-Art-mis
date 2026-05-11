@@ -1,0 +1,8 @@
+SUPABASE_URL=https://olcuybolhpccnncaupts.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_DdQXVkDte9E1a2qtVD-DUQ_gFFbGjIi
+
+DB_HOST=aws-1-eu-central-1.pooler.supabase.com
+DB_NAME=postgres
+DB_USER=postgres.olcuybolhpccnncaupts
+DB_PASSWORD=tfxYLOIBeLO6NTuB
+DB_PORT=5432
