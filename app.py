@@ -18,3 +18,7 @@ st.info("Connectez-vous depuis le menu à gauche pour accéder au dashboard.")
 
 if "user" in st.session_state:
     st.success(f"Vous êtes connecté avec : {st.session_state['user'].email}")
+
+with st.sidebar:
+    st.title("🚀 Artemis")
+    st.caption("Plateforme SaaS spatiale")
