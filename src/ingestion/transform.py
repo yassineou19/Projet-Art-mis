@@ -20,23 +20,43 @@ def transform_launches() -> int:
         longitude,
         status
     )
+
     select
         payload->>'id',
+
         payload->>'name',
+
         (payload->>'net')::timestamptz,
-        extract(year from (payload->>'net')::timestamptz)::int,
+
+        extract(
+            year from (payload->>'net')::timestamptz
+        )::int,
+
         payload->'launch_service_provider'->>'name',
+
         coalesce(
+            payload->'pad'->'location'->>'name',
             payload->'pad'->'location'->>'country_code',
             payload->'pad'->'location'->>'country',
             'UNKNOWN'
         ),
-        nullif(payload->'pad'->>'latitude', '')::numeric,
-        nullif(payload->'pad'->>'longitude', '')::numeric,
+
+        nullif(
+            payload->'pad'->>'latitude',
+            ''
+        )::numeric,
+
+        nullif(
+            payload->'pad'->>'longitude',
+            ''
+        )::numeric,
+
         payload->'status'->>'name'
+
     from dev.launches_raw
 
     on conflict (launch_id)
+
     do update set
         launch_name = excluded.launch_name,
         launch_date = excluded.launch_date,
