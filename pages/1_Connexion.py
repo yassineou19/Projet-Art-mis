@@ -1,133 +1,604 @@
-"""Page de connexion / inscription — hero + formulaire + onglets."""
+"""Page de connexion / inscription inspiree de la maquette Artemis."""
 import streamlit as st
 from src.auth import login, signup
 
-# Si l'utilisateur est déjà connecté, on relance la navigation
+
 if st.session_state.get("user") is not None:
     st.rerun()
 
-# Hero
+
+def show_auth_error(action: str) -> None:
+    """Affiche un message propre pour les erreurs d'authentification."""
+    st.error(
+        f"{action} impossible. Verifiez vos identifiants ou la configuration "
+        "Supabase du projet."
+    )
+
+
 st.markdown(
     """
-    <div class="artemis-hero">
-      <span class="badge">SPACE ANALYTICS · SaaS</span>
-      <h1>Artemis 🚀</h1>
-      <p>La plateforme d'analyse des lancements spatiaux pour analystes, investisseurs et passionnés.</p>
-    </div>
+    <style>
+    :root {
+        --artemis-bg: #050617;
+        --artemis-panel: rgba(17, 20, 46, 0.72);
+        --artemis-panel-strong: rgba(19, 22, 52, 0.9);
+        --artemis-line: rgba(178, 190, 255, 0.18);
+        --artemis-text: #f7f7ff;
+        --artemis-muted: #b7bdd6;
+        --artemis-purple: #9b4dff;
+        --artemis-blue: #3d7bff;
+    }
+
+    section[data-testid="stSidebar"],
+    header[data-testid="stHeader"],
+    div[data-testid="stToolbar"],
+    div[data-testid="stDecoration"] {
+        display: none !important;
+    }
+
+    div[data-testid="stAppViewContainer"] {
+        background:
+            radial-gradient(circle at 22% 68%, rgba(130, 74, 255, 0.36), transparent 8%),
+            radial-gradient(circle at 70% 22%, rgba(76, 96, 255, 0.18), transparent 18%),
+            radial-gradient(circle at 52% 92%, rgba(117, 73, 255, 0.32), transparent 16%),
+            linear-gradient(135deg, #040511 0%, #07091f 48%, #02030d 100%);
+        color: var(--artemis-text);
+    }
+
+    div[data-testid="stAppViewContainer"]::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image:
+            radial-gradient(circle, rgba(255,255,255,0.95) 0 1px, transparent 1.5px),
+            radial-gradient(circle, rgba(184,139,255,0.72) 0 1px, transparent 1.5px);
+        background-size: 88px 88px, 137px 137px;
+        background-position: 7px 18px, 42px 11px;
+        opacity: 0.42;
+    }
+
+    div[data-testid="stAppViewContainer"]::after {
+        content: "";
+        position: fixed;
+        left: -8vw;
+        right: -8vw;
+        bottom: -50vw;
+        height: 45vw;
+        z-index: 0;
+        pointer-events: none;
+        background:
+            radial-gradient(ellipse at 50% 8%, rgba(255,255,255,0.9), rgba(177,91,255,0.55) 5%, transparent 11%),
+            radial-gradient(ellipse at 50% 0%, rgba(167,107,255,0.8), rgba(40,64,186,0.6) 18%, rgba(18,20,69,0.45) 34%, transparent 62%);
+        border-top: 2px solid rgba(183, 137, 255, 0.72);
+        filter: drop-shadow(0 -18px 55px rgba(116, 79, 255, 0.42));
+        opacity: 0.9;
+    }
+
+    .main .block-container {
+        max-width: 1240px;
+        padding: 3rem 2.25rem 2rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    .artemis-copy {
+        padding-top: 2.35rem;
+    }
+
+    .artemis-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.7rem 1.2rem;
+        border: 1px solid rgba(159, 78, 255, 0.72);
+        border-radius: 999px;
+        background: rgba(11, 11, 32, 0.48);
+        color: #f2eeff;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        box-shadow: 0 0 26px rgba(128, 67, 255, 0.18);
+    }
+
+    .artemis-badge span {
+        width: 12px;
+        height: 12px;
+        display: inline-block;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #8e3cff, #bd72ff);
+    }
+
+    .artemis-logo-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 2.1rem;
+    }
+
+    .artemis-mark {
+        width: 82px;
+        height: 82px;
+        display: grid;
+        place-items: center;
+        border-radius: 26px;
+        color: white;
+        font-size: 3.1rem;
+        background: linear-gradient(145deg, #a45bff, #5729ff 58%, #844cff);
+        box-shadow: 0 22px 42px rgba(101, 47, 255, 0.35);
+        transform: rotate(-12deg);
+    }
+
+    .artemis-title {
+        margin: 0;
+        font-size: clamp(3.5rem, 6vw, 5.6rem);
+        line-height: 0.95;
+        color: #fbfbff;
+        text-shadow: 0 10px 32px rgba(127, 95, 255, 0.45);
+    }
+
+    .artemis-subtitle {
+        margin: 1.5rem 0 0;
+        color: #9e4cff;
+        font-size: clamp(1.45rem, 2.3vw, 2rem);
+        font-weight: 800;
+    }
+
+    .artemis-rule {
+        width: 48px;
+        height: 4px;
+        margin: 1.3rem 0 1.6rem;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #8d34ff, #4b83ff);
+    }
+
+    .artemis-description {
+        max-width: 430px;
+        margin: 0 0 1.85rem;
+        color: #d0d3e7;
+        font-size: 1.12rem;
+        line-height: 1.55;
+    }
+
+    .feature-list {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1.4rem;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .feature-icon,
+    .stat-icon {
+        width: 52px;
+        height: 52px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        color: #b960ff;
+        font-size: 1.55rem;
+        background: linear-gradient(145deg, rgba(108, 39, 231, 0.8), rgba(43, 29, 111, 0.85));
+        box-shadow: inset 0 0 22px rgba(180, 93, 255, 0.25);
+    }
+
+    .feature-item strong {
+        display: block;
+        color: white;
+        font-size: 1.02rem;
+    }
+
+    .feature-item small {
+        color: #b7bdd6;
+        font-size: 0.92rem;
+    }
+
+    .form-title {
+        margin: 0.35rem 0 0.1rem;
+        color: #fbfbff;
+        font-size: 1.7rem;
+        font-weight: 800;
+    }
+
+    .form-subtitle {
+        margin: 0 0 1.1rem;
+        color: var(--artemis-muted);
+        font-size: 1rem;
+    }
+
+    .st-key-login_card {
+        padding: 2rem 2.15rem;
+        border: 1px solid var(--artemis-line);
+        border-radius: 24px;
+        background: linear-gradient(145deg, rgba(23, 25, 61, 0.88), rgba(6, 8, 29, 0.88));
+        box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+        backdrop-filter: blur(24px);
+    }
+
+    div[data-testid="stTabs"] [role="tablist"] {
+        gap: 1.25rem;
+        border-bottom: 1px solid rgba(195, 201, 240, 0.14);
+    }
+
+    div[data-testid="stTabs"] [role="tab"] {
+        flex: 1 1 0;
+        justify-content: center;
+        color: #f6f2ff;
+        font-size: 1.04rem;
+        font-weight: 800;
+        padding: 0.65rem 0 0.9rem;
+    }
+
+    div[data-testid="stTabs"] [aria-selected="true"] {
+        color: #c277ff;
+    }
+
+    div[data-testid="stTabs"] [data-baseweb="tab-highlight"] {
+        height: 4px;
+        background: linear-gradient(90deg, #9b4dff, #4f85ff);
+        border-radius: 999px;
+    }
+
+    div[data-testid="stForm"] {
+        border: 0;
+        padding: 0;
+        background: transparent;
+    }
+
+    label, div[data-testid="stCheckbox"] label {
+        color: #f2f4ff !important;
+        font-weight: 700 !important;
+    }
+
+    .st-key-login_card div[data-baseweb="input"],
+    .st-key-login_card div[data-baseweb="base-input"],
+    .st-key-login_card div[data-baseweb="input"] > div {
+        min-height: 58px;
+        border: 1px solid rgba(202, 210, 255, 0.22);
+        border-radius: 10px;
+        background: rgba(12, 16, 40, 0.72) !important;
+        box-shadow: inset 0 0 22px rgba(61, 123, 255, 0.07);
+    }
+
+    .st-key-login_card div[data-baseweb="input"]:focus-within {
+        border-color: rgba(156, 86, 255, 0.8);
+        box-shadow: 0 0 0 3px rgba(155, 77, 255, 0.18);
+    }
+
+    .st-key-login_card input {
+        background: transparent !important;
+        color: white !important;
+        -webkit-text-fill-color: white !important;
+        caret-color: white !important;
+        font-weight: 650;
+    }
+
+    .st-key-login_card input::placeholder {
+        color: rgba(219, 224, 245, 0.68) !important;
+        -webkit-text-fill-color: rgba(219, 224, 245, 0.68) !important;
+    }
+
+    div[data-testid="stCheckbox"] {
+        margin-top: -0.4rem;
+    }
+
+    div[data-testid="stCheckbox"] span {
+        border-color: rgba(155, 77, 255, 0.8) !important;
+    }
+
+    div[data-testid="stForm"] button[kind="primaryFormSubmit"],
+    div[data-testid="stButton"] button {
+        min-height: 58px;
+        border: 1px solid rgba(177, 129, 255, 0.8);
+        border-radius: 10px;
+        color: #ffffff;
+        font-size: 1.04rem;
+        font-weight: 800;
+        background: linear-gradient(100deg, #7a27ef 0%, #9b4dff 44%, #3e7bff 100%);
+        box-shadow: 0 12px 32px rgba(80, 78, 255, 0.34);
+    }
+
+    div[data-testid="stButton"] button[kind="secondary"] {
+        background: rgba(12, 16, 40, 0.58);
+        border: 1px solid rgba(202, 210, 255, 0.18);
+        box-shadow: none;
+    }
+
+    .forgot-link {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: -2.1rem;
+        margin-bottom: 1rem;
+        color: #a250ff;
+        font-weight: 700;
+    }
+
+    .or-divider {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 1.4rem;
+        margin: 1.35rem 0 1rem;
+        color: #aeb5d1;
+    }
+
+    .or-divider::before,
+    .or-divider::after {
+        content: "";
+        height: 1px;
+        background: rgba(202, 210, 255, 0.18);
+    }
+
+    .stats-bar {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0;
+        margin-top: 2.4rem;
+        padding: 1.55rem 1.8rem;
+        border: 1px solid var(--artemis-line);
+        border-radius: 22px;
+        background: rgba(17, 20, 46, 0.72);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+    }
+
+    .stat-item {
+        display: grid;
+        grid-template-columns: 58px 1fr;
+        align-items: center;
+        gap: 1rem;
+        padding: 0 1.4rem;
+        border-right: 1px solid rgba(202, 210, 255, 0.14);
+    }
+
+    .stat-item:last-child {
+        border-right: 0;
+    }
+
+    .stat-value {
+        color: white;
+        font-size: 1.75rem;
+        font-weight: 850;
+        line-height: 1;
+    }
+
+    .stat-value.purple {
+        color: #d385ff;
+    }
+
+    .stat-label {
+        margin-top: 0.45rem;
+        color: #c7ccde;
+        line-height: 1.45;
+        font-size: 0.93rem;
+    }
+
+    .artemis-footer {
+        margin-top: 2rem;
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        color: rgba(200, 205, 226, 0.62);
+        font-size: 0.88rem;
+    }
+
+    .artemis-footer span:not(:first-child) {
+        color: #8f4cff;
+    }
+
+    @media (max-width: 900px) {
+        .main .block-container {
+            padding: 1.4rem 1rem 1.5rem;
+        }
+
+        .artemis-copy {
+            padding-top: 0;
+        }
+
+        .artemis-logo-row {
+            margin-top: 1.4rem;
+        }
+
+        .artemis-mark {
+            width: 62px;
+            height: 62px;
+            font-size: 2.2rem;
+        }
+
+        .st-key-login_card {
+            padding: 1.35rem;
+            border-radius: 18px;
+            margin-top: 1.2rem;
+        }
+
+        .stats-bar {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            padding: 1rem;
+        }
+
+        .stat-item {
+            border-right: 0;
+            padding: 0.9rem;
+        }
+
+        .artemis-footer {
+            flex-wrap: wrap;
+            gap: 0.8rem 1.2rem;
+        }
+    }
+    </style>
     """,
     unsafe_allow_html=True,
 )
 
-# Layout centré
-left, center, right = st.columns([1, 2, 1])
 
-with center:
-    tab_login, tab_signup = st.tabs(["🔐 Connexion", "✨ Créer un compte"])
+left, right = st.columns([0.92, 1.08], gap="large")
 
-    # --- Connexion ---
-    with tab_login:
-        with st.form("login_form"):
-            st.markdown("##### Accédez à vos dashboards")
-            email = st.text_input(
-                "Email",
-                placeholder="vous@entreprise.com",
-                autocomplete="email",
-            )
-            password = st.text_input(
-                "Mot de passe",
-                type="password",
-                placeholder="••••••••",
-                autocomplete="current-password",
-            )
-            submit = st.form_submit_button(
-                "Se connecter",
-                use_container_width=True,
-                type="primary",
-            )
-
-        if submit:
-            if not email or not password:
-                st.error("Veuillez renseigner email et mot de passe.")
-            else:
-                try:
-                    response = login(email, password)
-                    if response and response.user:
-                        st.session_state["user"] = response.user
-                        st.success("Connexion réussie. Redirection…")
-                        st.rerun()
-                    else:
-                        st.error("Identifiants invalides.")
-                except Exception:
-                    st.error("Email ou mot de passe incorrect.")
-
-    # --- Inscription ---
-    with tab_signup:
-        with st.form("signup_form"):
-            st.markdown("##### Créez votre compte gratuit")
-            new_email = st.text_input(
-                "Email professionnel",
-                key="signup_email",
-                placeholder="vous@entreprise.com",
-            )
-            new_password = st.text_input(
-                "Mot de passe",
-                type="password",
-                key="signup_pwd",
-                placeholder="Au moins 8 caractères",
-            )
-            create = st.form_submit_button(
-                "Créer mon compte",
-                use_container_width=True,
-                type="primary",
-            )
-
-        if create:
-            if not new_email or not new_password:
-                st.error("Veuillez renseigner email et mot de passe.")
-            elif len(new_password) < 8:
-                st.error("Le mot de passe doit contenir au moins 8 caractères.")
-            else:
-                try:
-                    response = signup(new_email, new_password)
-                    if response and response.user:
-                        st.success(
-                            "Compte créé. Vérifiez votre boîte mail puis "
-                            "connectez-vous via l'onglet Connexion."
-                        )
-                    else:
-                        st.error(
-                            "Impossible de créer le compte. "
-                            "Cet email est peut-être déjà utilisé."
-                        )
-                except Exception as e:
-                    st.error("Erreur lors de la création du compte.")
-                    st.exception(e)
-
-    # Pitch valeur
+with left:
     st.markdown(
         """
-        <div style="margin-top: 1.5rem; padding: 1rem;
-             border: 1px solid rgba(0,0,0,0.06); border-radius: 12px;
-             background: white;">
-          <div style="display: flex; gap: 1rem; justify-content: space-around;
-               text-align: center; flex-wrap: wrap;">
-            <div>
-              <div style="font-size: 1.4rem;">📊</div>
-              <div style="font-weight: 600; font-size: 0.9rem;">Dashboards live</div>
-              <div style="color: #6b7280; font-size: 0.8rem;">KPIs & tendances</div>
+        <div class="artemis-copy">
+          <div class="artemis-badge"><span></span>SPACE ANALYTICS · SaaS</div>
+          <div class="artemis-logo-row">
+            <div class="artemis-mark">▲</div>
+            <h1 class="artemis-title">Artemis</h1>
+          </div>
+          <h2 class="artemis-subtitle">Space Analytics Platform</h2>
+          <div class="artemis-rule"></div>
+          <p class="artemis-description">
+            La plateforme d'analyse des lancements spatiaux pour analystes,
+            investisseurs et passionnes.
+          </p>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-icon">▥</div>
+              <div><strong>Dashboards live</strong><small>KPIs & tendances en temps reel</small></div>
             </div>
-            <div>
-              <div style="font-size: 1.4rem;">🌍</div>
-              <div style="font-weight: 600; font-size: 0.9rem;">Carte mondiale</div>
-              <div style="color: #6b7280; font-size: 0.8rem;">Sites de lancement</div>
+            <div class="feature-item">
+              <div class="feature-icon">◎</div>
+              <div><strong>Carte mondiale</strong><small>Sites de lancement & geographie</small></div>
             </div>
-            <div>
-              <div style="font-size: 1.4rem;">🏁</div>
-              <div style="font-weight: 600; font-size: 0.9rem;">Space Race</div>
-              <div style="color: #6b7280; font-size: 0.8rem;">Concurrence agences</div>
+            <div class="feature-item">
+              <div class="feature-icon">↗</div>
+              <div><strong>Space Race</strong><small>Concurrence & performances des agences</small></div>
             </div>
           </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+with right:
+    with st.container(key="login_card"):
+        tab_login, tab_signup = st.tabs(["Connexion", "Creer un compte"])
+
+        with tab_login:
+            st.markdown(
+                """
+                <h3 class="form-title">Accedez a vos dashboards</h3>
+                <p class="form-subtitle">Connectez-vous pour continuer</p>
+                """,
+                unsafe_allow_html=True,
+            )
+            with st.form("login_form"):
+                email = st.text_input(
+                    "Email",
+                    placeholder="vous@entreprise.com",
+                    autocomplete="email",
+                )
+                password = st.text_input(
+                    "Mot de passe",
+                    type="password",
+                    placeholder="Votre mot de passe",
+                    autocomplete="current-password",
+                )
+                remember = st.checkbox("Se souvenir de moi", value=True)
+                st.markdown('<div class="forgot-link">Mot de passe oublie ?</div>', unsafe_allow_html=True)
+                submit = st.form_submit_button(
+                    "Se connecter",
+                    use_container_width=True,
+                    type="primary",
+                )
+
+            if submit:
+                if not email or not password:
+                    st.error("Veuillez renseigner email et mot de passe.")
+                else:
+                    try:
+                        response = login(email, password)
+                        if response and response.user:
+                            st.session_state["user"] = response.user
+                            st.session_state["remember_me"] = remember
+                            st.success("Connexion reussie. Redirection...")
+                            st.rerun()
+                        else:
+                            st.error("Identifiants invalides.")
+                    except Exception:
+                        show_auth_error("Connexion")
+
+            st.markdown('<div class="or-divider">ou</div>', unsafe_allow_html=True)
+            if st.button("G  Continuer avec Google", use_container_width=True):
+                st.info("La connexion Google n'est pas encore configuree.")
+
+        with tab_signup:
+            st.markdown(
+                """
+                <h3 class="form-title">Creez votre compte</h3>
+                <p class="form-subtitle">Rejoignez Artemis Space Analytics</p>
+                """,
+                unsafe_allow_html=True,
+            )
+            with st.form("signup_form"):
+                new_email = st.text_input(
+                    "Email professionnel",
+                    key="signup_email",
+                    placeholder="vous@entreprise.com",
+                    autocomplete="email",
+                )
+                new_password = st.text_input(
+                    "Mot de passe",
+                    type="password",
+                    key="signup_pwd",
+                    placeholder="Au moins 8 caracteres",
+                    autocomplete="new-password",
+                )
+                create = st.form_submit_button(
+                    "Creer mon compte",
+                    use_container_width=True,
+                    type="primary",
+                )
+
+            if create:
+                if not new_email or not new_password:
+                    st.error("Veuillez renseigner email et mot de passe.")
+                elif len(new_password) < 8:
+                    st.error("Le mot de passe doit contenir au moins 8 caracteres.")
+                else:
+                    try:
+                        response = signup(new_email, new_password)
+                        if response and response.user:
+                            st.success(
+                                "Compte cree. Verifiez votre boite mail puis "
+                                "connectez-vous via l'onglet Connexion."
+                            )
+                        else:
+                            st.error(
+                                "Impossible de creer le compte. "
+                                "Cet email est peut-etre deja utilise."
+                            )
+                    except Exception:
+                        show_auth_error("Creation du compte")
+
+st.markdown(
+    """
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-icon">↗</div>
+        <div><div class="stat-value purple">12,842</div><div class="stat-label">Lancements analyses<br>1957 - 2024</div></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-icon">◎</div>
+        <div><div class="stat-value purple">87</div><div class="stat-label">Pays actifs<br>dans le monde</div></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-icon">⌂</div>
+        <div><div class="stat-value">247</div><div class="stat-label">Sites de lancement<br>repertories</div></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-icon">⌁</div>
+        <div><div class="stat-value">68 ans</div><div class="stat-label">De donnees historiques<br>consolidees</div></div>
+      </div>
+    </div>
+    <div class="artemis-footer">
+      <span>© 2026 Artemis Platform · Tous droits reserves</span>
+      <span>A propos</span>
+      <span>Documentation</span>
+      <span>Confidentialite</span>
+      <span>Contact</span>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)

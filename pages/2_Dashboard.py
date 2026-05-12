@@ -113,7 +113,10 @@ with col1:
     )
     fig_agencies.update_layout(yaxis={"categoryorder": "total ascending"})
     fig_agencies.update_coloraxes(showscale=False)
-    fig_agencies.update_traces(hovertemplate="<b>%{y}</b><br>%{x} lancements<extra></extra>")
+    fig_agencies.update_traces(
+        marker_line_width=0,
+        hovertemplate="<b>%{y}</b><br>%{x} lancements<extra></extra>",
+    )
     style_plotly(fig_agencies, height=420)
     st.plotly_chart(fig_agencies, use_container_width=True)
 
@@ -125,10 +128,25 @@ with col2:
         color_discrete_sequence=ARTEMIS_COLORS, hole=0.5,
     )
     fig_country.update_traces(
-        textposition="outside", textinfo="percent+label",
+        textposition="inside",
+        textinfo="percent",
+        textfont_size=12,
+        insidetextfont=dict(color="#FFFFFF", size=12),
         hovertemplate="<b>%{label}</b><br>%{value} lancements<br>%{percent}<extra></extra>",
     )
     style_plotly(fig_country, height=420)
+    fig_country.update_layout(
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.05,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=10, color="#111827"),
+        ),
+        margin=dict(l=8, r=8, t=20, b=95),
+    )
     st.plotly_chart(fig_country, use_container_width=True)
 
 # ----- Croissance -----
@@ -144,7 +162,11 @@ fig_growth = px.bar(
     color_continuous_midpoint=0,
 )
 fig_growth.update_coloraxes(showscale=False)
-fig_growth.update_traces(hovertemplate="Année %{x}<br>%{y:.1f}%<extra></extra>")
+fig_growth.update_traces(
+    marker_line_width=0,
+    outsidetextfont=dict(color="#111827", size=12),
+    hovertemplate="Année %{x}<br>%{y:.1f}%<extra></extra>",
+)
 style_plotly(fig_growth, height=320)
 st.plotly_chart(fig_growth, use_container_width=True)
 

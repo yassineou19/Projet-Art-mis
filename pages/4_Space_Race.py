@@ -65,9 +65,13 @@ fig_bar = px.bar(
 fig_bar.update_layout(yaxis={"categoryorder": "total ascending"}, showlegend=False)
 fig_bar.update_traces(
     textposition="outside",
+    marker_line_width=0,
+    cliponaxis=False,
+    outsidetextfont=dict(color="#111827", size=12),
     hovertemplate="<b>%{y}</b><br>%{x} lancements<extra></extra>",
 )
 style_plotly(fig_bar, height=480)
+fig_bar.update_layout(margin=dict(l=20, r=70, t=34, b=34))
 st.plotly_chart(fig_bar, use_container_width=True)
 
 # Scatter + pie
@@ -88,6 +92,7 @@ with col1:
         },
     )
     fig_scatter.update_traces(
+        marker=dict(line=dict(width=0), opacity=0.82),
         hovertemplate=(
             "<b>%{hovertext}</b><br>"
             "Années actives: %{x}<br>"
@@ -105,10 +110,24 @@ with col2:
         hole=0.55, color_discrete_sequence=ARTEMIS_COLORS,
     )
     fig_pie.update_traces(
-        textposition="inside", textinfo="percent",
+        textposition="inside",
+        textinfo="percent",
+        textfont_size=12,
+        insidetextfont=dict(color="#FFFFFF", size=12),
         hovertemplate="<b>%{label}</b><br>Part: %{value:.1f}%<extra></extra>",
     )
     style_plotly(fig_pie, height=460)
+    fig_pie.update_layout(
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.05,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=10, color="#111827"),
+        ),
+        margin=dict(l=8, r=8, t=20, b=110),
+    )
     st.plotly_chart(fig_pie, use_container_width=True)
 
 # Insight
