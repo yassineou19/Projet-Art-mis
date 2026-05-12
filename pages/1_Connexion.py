@@ -99,8 +99,9 @@ with center:
                             "Impossible de créer le compte. "
                             "Cet email est peut-être déjà utilisé."
                         )
-                except Exception:
-                    st.error("Erreur lors de la création du compte. Réessayez plus tard.")
+                except Exception as e:
+                    st.error("Erreur lors de la création du compte.")
+                    st.exception(e)
 
     # Pitch valeur
     st.markdown(

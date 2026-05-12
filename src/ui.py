@@ -1,6 +1,19 @@
 """Composants UI partagés: thème, sidebar, protection, KPIs, insights, Plotly."""
 import streamlit as st
 from src.auth import logout
+import os
+
+
+def is_admin(user) -> bool:
+    admin_emails = os.getenv("ADMIN_EMAILS", "")
+    allowed = [email.strip().lower() for email in admin_emails.split(",") if email.strip()]
+    return user.email.lower() in allowed
+
+
+def require_admin(user) -> None:
+    if not is_admin(user):
+        st.error("Accès réservé aux administrateurs.")
+        st.stop()
 
 # Palette Artemis — cohérence visuelle entre toutes les pages
 ARTEMIS_COLORS = [
