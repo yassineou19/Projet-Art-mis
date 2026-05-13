@@ -35,12 +35,17 @@ if st.session_state["user"] is None:
         ],
     }
 else:
-    analytics_pages = [
+    public_pages = [
         st.Page(
             "pages/2_Dashboard.py",
             title="Dashboard",
             icon=":material/dashboard:",
             default=True,
+        ),
+        st.Page(
+            "pages/6_Briefing.py",
+            title="Briefing",
+            icon=":material/article:",
         ),
         st.Page(
             "pages/3_Map_Mondiale.py",
@@ -54,16 +59,16 @@ else:
         ),
     ]
 
+    pages = {"Analytics": public_pages}
+
     if is_admin(st.session_state["user"]):
-        analytics_pages.append(
+        pages["Administration"] = [
             st.Page(
                 "pages/5_Pipeline_Monitoring.py",
                 title="Pipeline Monitoring",
                 icon=":material/monitoring:",
-            )
-        )
-
-    pages = {"Analytics": analytics_pages}
+            ),
+        ]
 
 pg = st.navigation(pages, position="sidebar")
 pg.run()

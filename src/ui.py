@@ -6,6 +6,7 @@ import os
 import streamlit as st
 
 from src.auth import logout
+from src.profiles import get_subscription_plan_label, get_user_type_label
 
 
 # =========================================================
@@ -592,6 +593,14 @@ def render_sidebar(user) -> None:
     with st.sidebar:
         email = get_user_email(user)
         admin = is_admin(user)
+        profile = st.session_state.get("profile") or {}
+        user_type_label = get_user_type_label(profile.get("user_type"))
+        plan_label = get_subscription_plan_label(profile.get("subscription_plan"))
+        profile_html = (
+            f'<span class="role">{user_type_label} · {plan_label}</span>'
+            if profile else
+            '<span class="role">Profil non configure</span>'
+        )
         role_html = '<span class="role">Admin</span>' if admin else ""
 
         st.markdown(
@@ -599,6 +608,7 @@ def render_sidebar(user) -> None:
             <div class="artemis-account">
                 <div class="label">Compte actif</div>
                 <div class="email">{email}</div>
+                {profile_html}
                 {role_html}
             </div>
             """,

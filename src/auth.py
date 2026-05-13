@@ -43,6 +43,7 @@ def logout() -> None:
         # On ignore les erreurs réseau / token déjà invalide.
         pass
     st.session_state["user"] = None
+    st.session_state["profile"] = None
 
 
 def get_user():

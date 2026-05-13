@@ -1,10 +1,22 @@
 """Page de connexion / inscription inspiree de la maquette Artemis."""
 import streamlit as st
 from src.auth import login, signup
+from src.profiles import (
+    FALLBACK_SUBSCRIPTION_PLANS,
+    create_user_profile,
+    load_subscription_plans,
+    load_user_profile,
+)
 
 
 if st.session_state.get("user") is not None:
     st.rerun()
+
+
+USER_TYPE_OPTIONS = {
+    "Passionne d'espace": "space_enthusiast",
+    "Journaliste scientifique": "journalist",
+}
 
 
 def show_auth_error(action: str) -> None:
@@ -12,6 +24,74 @@ def show_auth_error(action: str) -> None:
     st.error(
         f"{action} impossible. Verifiez vos identifiants ou la configuration "
         "Supabase du projet."
+    )
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_signup_subscription_plans() -> list[dict]:
+    """Charge les offres pour le formulaire d'inscription."""
+    try:
+        return load_subscription_plans()
+    except Exception:
+        return FALLBACK_SUBSCRIPTION_PLANS
+
+
+def format_plan_option(plan: dict) -> str:
+    """Libellé lisible d'une offre dans le selectbox."""
+    price = int(plan["price_monthly_eur"])
+    if price == 0:
+        return f"{plan['name']} - gratuit"
+    return f"{plan['name']} - {price} EUR/mois"
+
+
+def render_plan_details(plan: dict) -> None:
+    """Affiche le détail de l'offre sélectionnée."""
+    price = int(plan["price_monthly_eur"])
+    price_label = "Gratuit" if price == 0 else f"{price} EUR / mois"
+    features_html = ""
+
+    for item in plan.get("features", []):
+        marker = "✓" if item["is_included"] else "Verrouille"
+        color = "#86efac" if item["is_included"] else "#c4b5fd"
+        opacity = "1" if item["is_included"] else "0.68"
+        features_html += (
+            f'<div style="display:flex;align-items:flex-start;gap:.55rem;opacity:{opacity};">'
+            f'<span style="color:{color};font-weight:800;min-width:4.8rem;">{marker}</span>'
+            f"<span>{item['feature']}</span>"
+            "</div>"
+        )
+
+    st.markdown(
+        f"""
+        <div style="
+            margin:.65rem 0 1rem;
+            padding:1rem;
+            border:1px solid rgba(202,210,255,.18);
+            border-radius:14px;
+            background:rgba(12,16,40,.58);
+        ">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;">
+                <div>
+                    <div style="color:#c277ff;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;">
+                        Offre selectionnee
+                    </div>
+                    <div style="color:#fff;font-size:1.15rem;font-weight:850;margin-top:.15rem;">
+                        {plan['name']}
+                    </div>
+                </div>
+                <div style="color:#fff;font-weight:850;white-space:nowrap;">
+                    {price_label}
+                </div>
+            </div>
+            <p style="color:#b7bdd6;margin:.7rem 0 .8rem;line-height:1.45;">
+                {plan['description']}
+            </p>
+            <div style="display:grid;gap:.45rem;color:#f7f7ff;font-size:.9rem;">
+                {features_html}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 
@@ -511,6 +591,9 @@ with right:
                         response = login(email, password)
                         if response and response.user:
                             st.session_state["user"] = response.user
+                            st.session_state["profile"] = load_user_profile(
+                                response.user.id
+                            )
                             st.session_state["remember_me"] = remember
                             st.success("Connexion reussie. Redirection...")
                             st.rerun()
@@ -531,25 +614,46 @@ with right:
                 """,
                 unsafe_allow_html=True,
             )
-            with st.form("signup_form"):
-                new_email = st.text_input(
-                    "Email professionnel",
-                    key="signup_email",
-                    placeholder="vous@entreprise.com",
-                    autocomplete="email",
-                )
-                new_password = st.text_input(
-                    "Mot de passe",
-                    type="password",
-                    key="signup_pwd",
-                    placeholder="Au moins 8 caracteres",
-                    autocomplete="new-password",
-                )
-                create = st.form_submit_button(
-                    "Creer mon compte",
-                    use_container_width=True,
-                    type="primary",
-                )
+            subscription_plans = get_signup_subscription_plans()
+            subscription_plan_options = {
+                format_plan_option(plan): plan["id"]
+                for plan in subscription_plans
+            }
+
+            new_email = st.text_input(
+                "Email professionnel",
+                key="signup_email",
+                placeholder="vous@entreprise.com",
+                autocomplete="email",
+            )
+            new_password = st.text_input(
+                "Mot de passe",
+                type="password",
+                key="signup_pwd",
+                placeholder="Au moins 8 caracteres",
+                autocomplete="new-password",
+            )
+            selected_user_type = st.selectbox(
+                "Votre profil",
+                list(USER_TYPE_OPTIONS.keys()),
+                key="signup_user_type",
+            )
+            selected_subscription_plan = st.selectbox(
+                "Votre offre",
+                list(subscription_plan_options.keys()),
+                key="signup_subscription_plan",
+            )
+            selected_plan = next(
+                plan
+                for plan in subscription_plans
+                if plan["id"] == subscription_plan_options[selected_subscription_plan]
+            )
+            render_plan_details(selected_plan)
+            create = st.button(
+                "Creer mon compte",
+                use_container_width=True,
+                type="primary",
+            )
 
             if create:
                 if not new_email or not new_password:
@@ -560,6 +664,14 @@ with right:
                     try:
                         response = signup(new_email, new_password)
                         if response and response.user:
+                            create_user_profile(
+                                user_id=response.user.id,
+                                email=new_email,
+                                user_type=USER_TYPE_OPTIONS[selected_user_type],
+                                subscription_plan=subscription_plan_options[
+                                    selected_subscription_plan
+                                ],
+                            )
                             st.success(
                                 "Compte cree. Verifiez votre boite mail puis "
                                 "connectez-vous via l'onglet Connexion."
