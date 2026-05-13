@@ -177,22 +177,19 @@ with c1:
     kpi_card(
         "Total launches",
         format_number(fresh["total_launches"]) if fresh is not None else "0",
-        icon="🚀",
     )
 with c2:
     kpi_card(
         "Dernière année",
         str(int(fresh["max_year"])) if fresh is not None and pd.notna(fresh["max_year"]) else "—",
-        icon="📅",
     )
 with c3:
     kpi_card(
         "Offset actuel",
         format_number(state_row["last_offset"]) if state_row is not None else "0",
-        icon="📍",
     )
 with c4:
-    kpi_card("Durée moyenne run", _fmt_duration(avg_duration_s), icon="⏱️")
+    kpi_card("Durée moyenne run", _fmt_duration(avg_duration_s))
 
 st.divider()
 

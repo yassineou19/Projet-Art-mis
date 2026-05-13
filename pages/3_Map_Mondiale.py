@@ -63,16 +63,15 @@ country_counts = (
 # === KPIs ===
 k1, k2, k3 = st.columns(3)
 with k1:
-    kpi_card("Lancements affichés", format_number(int(country_counts["launches"].sum())), icon="🚀")
+    kpi_card("Lancements affichés", format_number(int(country_counts["launches"].sum())))
 with k2:
-    kpi_card("Sites actifs", str(len(country_counts)), icon="📍")
+    kpi_card("Sites actifs", str(len(country_counts)))
 with k3:
     top_site = country_counts.iloc[0]
     kpi_card(
         "Site #1",
         str(top_site["country"]),
         delta=f"{format_number(top_site['launches'])} lancements",
-        icon="🏆",
     )
 
 st.markdown("")

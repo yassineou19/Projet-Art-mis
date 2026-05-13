@@ -57,7 +57,7 @@ st.markdown("")
 st.divider()
 
 # Bar chart
-st.subheader("🏢 Volume d'activité par agence")
+st.subheader("Volume d'activité par agence")
 fig_bar = px.bar(
     df_top, x="launches", y="agency", orientation="h",
     color="agency", color_discrete_sequence=ARTEMIS_COLORS,
@@ -79,7 +79,7 @@ st.plotly_chart(fig_bar, use_container_width=True)
 col1, col2 = st.columns([3, 2])
 
 with col1:
-    st.subheader("⏱️ Longévité vs activité")
+    st.subheader("Longévité vs activité")
     fig_scatter = px.scatter(
         df_top,
         x="active_years", y="launches",
@@ -105,7 +105,7 @@ with col1:
     st.plotly_chart(fig_scatter, use_container_width=True)
 
 with col2:
-    st.subheader("🥧 Parts d'activité")
+    st.subheader("Parts d'activité")
     fig_pie = px.pie(
         df_top, names="agency", values="market_share_pct",
         hole=0.55, color_discrete_sequence=ARTEMIS_COLORS,

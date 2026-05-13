@@ -141,7 +141,7 @@ st.markdown("")
 st.divider()
 
 # ----- Évolution annuelle -----
-st.subheader("📈 Évolution annuelle des lancements")
+st.subheader("Évolution annuelle des lancements")
 fig_year = px.area(
     lby_filtered, x="year", y="launches",
     color_discrete_sequence=[ARTEMIS_COLORS[0]],
@@ -165,7 +165,7 @@ if not lby_filtered.empty:
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("🏢 Top 10 agences")
+    st.subheader("Top 10 agences")
     top10 = top_agencies.head(10)
     fig_agencies = px.bar(
         top10, x="launches", y="agency", orientation="h",
@@ -182,7 +182,7 @@ with col1:
     st.plotly_chart(fig_agencies, use_container_width=True)
 
 with col2:
-    st.subheader("🌍 Répartition par pays")
+    st.subheader("Répartition par pays")
     top_countries = launches_by_country.sort_values("launches", ascending=False).head(8)
     fig_country = px.pie(
         top_countries, names="country", values="launches",
@@ -211,7 +211,7 @@ with col2:
     st.plotly_chart(fig_country, use_container_width=True)
 
 # ----- Croissance -----
-st.subheader("📊 Croissance annuelle (%)")
+st.subheader("Croissance annuelle (%)")
 growth_filtered = (
     growth[(growth["year"] >= y_from) & (growth["year"] <= y_to)]
     if y_from is not None else growth

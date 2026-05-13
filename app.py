@@ -6,7 +6,7 @@ from src.ui import apply_theme, is_admin
 
 st.set_page_config(
     page_title="Artemis · Space Analytics",
-    page_icon="🚀",
+    page_icon=":material/orbit:",
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={"About": "Artemis — SaaS d'analyse des lancements spatiaux."},
@@ -26,19 +26,43 @@ if "user" not in st.session_state:
 if st.session_state["user"] is None:
     pages = {
         "Compte": [
-            st.Page("pages/1_Connexion.py", title="Connexion", icon="🔐", default=True),
+            st.Page(
+                "pages/1_Connexion.py",
+                title="Connexion",
+                icon=":material/login:",
+                default=True,
+            ),
         ],
     }
 else:
     analytics_pages = [
-        st.Page("pages/2_Dashboard.py",    title="Dashboard",       icon="📊", default=True),
-        st.Page("pages/3_Map_Mondiale.py", title="Carte mondiale",  icon="🌍"),
-        st.Page("pages/4_Space_Race.py",   title="Space Race",      icon="🏁"),
+        st.Page(
+            "pages/2_Dashboard.py",
+            title="Dashboard",
+            icon=":material/dashboard:",
+            default=True,
+        ),
+        st.Page(
+            "pages/3_Map_Mondiale.py",
+            title="Carte mondiale",
+            icon=":material/public:",
+        ),
+        st.Page(
+            "pages/4_Space_Race.py",
+            title="Space Race",
+            icon=":material/emoji_events:",
+        ),
     ]
+
     if is_admin(st.session_state["user"]):
         analytics_pages.append(
-            st.Page("pages/5_Pipeline_Monitoring.py", title="Pipeline Monitoring", icon="🛠️")
+            st.Page(
+                "pages/5_Pipeline_Monitoring.py",
+                title="Pipeline Monitoring",
+                icon=":material/monitoring:",
+            )
         )
+
     pages = {"Analytics": analytics_pages}
 
 pg = st.navigation(pages, position="sidebar")
