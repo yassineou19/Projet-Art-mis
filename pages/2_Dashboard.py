@@ -1,7 +1,8 @@
 """Dashboard principal — KPIs calculés, évolution, top agences, pays, croissance."""
 import streamlit as st
+from src.ui import plotly_legend_style
 import plotly.express as px
-from src.queries import load_dashboard_data
+from src.queries import load_dashboard_data, load_view
 from src.ui import (
     require_auth, render_sidebar, page_header,
     kpi_card, insight, style_plotly, ARTEMIS_COLORS,
@@ -46,17 +47,77 @@ else:
     lby_filtered = launches_by_year
     y_from = y_to = None
 
-# ----- KPIs calculés dynamiquement -----
+# =========================================================
+# Vue détaillée pour KPIs filtrés par période
+# Nécessite la vue SQL dev.launches_dashboard_detail
+# Colonnes attendues : year, country, agency
+# =========================================================
+try:
+    detail = load_view("launches_dashboard_detail")
+
+    if y_from is not None and y_to is not None:
+        detail_filtered = detail[
+            (detail["year"] >= y_from) &
+            (detail["year"] <= y_to)
+        ]
+    else:
+        detail_filtered = detail
+
+except Exception:
+    # Fallback si la vue SQL n'existe pas encore
+    detail_filtered = None
+
+
+# =========================================================
+# KPIs calculés dynamiquement
+# - total_launches utilise déjà lby_filtered
+# - pays leader / agence / pays actifs utilisent detail_filtered
+# =========================================================
 total_launches = int(lby_filtered["launches"].sum()) if not lby_filtered.empty else 0
-top_country_row = (
-    launches_by_country.sort_values("launches", ascending=False).iloc[0]
-    if not launches_by_country.empty else None
-)
-top_agency_row = (
-    top_agencies.sort_values("launches", ascending=False).iloc[0]
-    if not top_agencies.empty else None
-)
-nb_countries = launches_by_country["country"].nunique() if not launches_by_country.empty else 0
+
+if detail_filtered is not None and not detail_filtered.empty:
+
+    # Pays leader sur la période sélectionnée
+    top_country_row = (
+        detail_filtered
+        .dropna(subset=["country"])
+        .groupby("country")
+        .size()
+        .reset_index(name="launches")
+        .sort_values("launches", ascending=False)
+        .iloc[0]
+    )
+
+    # Agence dominante sur la période sélectionnée
+    top_agency_row = (
+        detail_filtered
+        .dropna(subset=["agency"])
+        .groupby("agency")
+        .size()
+        .reset_index(name="launches")
+        .sort_values("launches", ascending=False)
+        .iloc[0]
+    )
+
+    # Nombre de pays actifs sur la période sélectionnée
+    nb_countries = detail_filtered["country"].dropna().nunique()
+
+else:
+    # Fallback : anciennes vues globales si la vue détaillée n'est pas disponible
+    top_country_row = (
+        launches_by_country.sort_values("launches", ascending=False).iloc[0]
+        if not launches_by_country.empty else None
+    )
+
+    top_agency_row = (
+        top_agencies.sort_values("launches", ascending=False).iloc[0]
+        if not top_agencies.empty else None
+    )
+
+    nb_countries = (
+        launches_by_country["country"].nunique()
+        if not launches_by_country.empty else 0
+    )
 
 c1, c2, c3, c4 = st.columns(4)
 with c1:
@@ -134,19 +195,19 @@ with col2:
         insidetextfont=dict(color="#FFFFFF", size=12),
         hovertemplate="<b>%{label}</b><br>%{value} lancements<br>%{percent}<extra></extra>",
     )
-    style_plotly(fig_country, height=420)
+    style_plotly(fig_country, height=560)
     fig_country.update_layout(
         showlegend=True,
         legend=dict(
-            orientation="h",
+            **plotly_legend_style(),
+            orientation="v",
             yanchor="top",
-            y=-0.05,
+            y=-0.18,
             xanchor="center",
             x=0.5,
-            font=dict(size=10, color="#111827"),
         ),
-        margin=dict(l=8, r=8, t=20, b=95),
-    )
+        margin=dict(l=8, r=8, t=20, b=240),
+    )   
     st.plotly_chart(fig_country, use_container_width=True)
 
 # ----- Croissance -----

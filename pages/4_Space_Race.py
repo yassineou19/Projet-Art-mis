@@ -5,6 +5,7 @@ from src.queries import load_view
 from src.ui import (
     require_auth, render_sidebar, page_header,
     kpi_card, insight, style_plotly, ARTEMIS_COLORS,
+    plotly_legend_style,
 )
 
 user = require_auth()
@@ -116,18 +117,19 @@ with col2:
         insidetextfont=dict(color="#FFFFFF", size=12),
         hovertemplate="<b>%{label}</b><br>Part: %{value:.1f}%<extra></extra>",
     )
-    style_plotly(fig_pie, height=460)
+    style_plotly(fig_pie, height=620)
     fig_pie.update_layout(
+        showlegend=True,
         legend=dict(
-            orientation="h",
+            **plotly_legend_style(),
+            orientation="v",
             yanchor="top",
-            y=-0.05,
+            y=-0.18,
             xanchor="center",
             x=0.5,
-            font=dict(size=10, color="#111827"),
         ),
-        margin=dict(l=8, r=8, t=20, b=110),
-    )
+        margin=dict(l=8, r=8, t=20, b=260),
+    )   
     st.plotly_chart(fig_pie, use_container_width=True)
 
 # Insight

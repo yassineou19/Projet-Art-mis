@@ -174,8 +174,60 @@ def apply_theme(mode: str = "dark") -> None:
         background: var(--bg-secondary);
         border-right: 1px solid var(--border);
     }}
-    [data-testid="stSidebarNav"] a {{
+
+    /* Titres de sections sidebar */
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] span {{
         color: var(--text) !important;
+    }}
+
+    /* Navigation Streamlit */
+    [data-testid="stSidebarNav"] {{
+        padding-top: 1rem;
+    }}
+
+    [data-testid="stSidebarNav"] ul {{
+        gap: .35rem;
+    }}
+
+    [data-testid="stSidebarNav"] li {{
+        margin-bottom: .25rem;
+    }}
+
+    [data-testid="stSidebarNav"] a {{
+        color: var(--muted) !important;
+        border-radius: 14px;
+        padding: .65rem .75rem;
+        font-weight: 600;
+        transition: all .18s ease;
+    }}
+
+    [data-testid="stSidebarNav"] a:hover {{
+        color: var(--text) !important;
+        background: rgba(124,58,237,0.10);
+    }}
+
+    /* Page active */
+    [data-testid="stSidebarNav"] a[aria-current="page"] {{
+        color: var(--text) !important;
+        background: rgba(124,58,237,0.18);
+        font-weight: 700;
+    }}
+
+    /* Mode clair : contraste renforcé */
+    [data-testid="stAppViewContainer"] [data-testid="stSidebar"] {{
+        color: var(--text) !important;
+    }}
+
+    [data-testid="stSidebarNav"] a span {{
+        color: inherit !important;
+    }}
+
+    /* Radio apparition */
+    [data-testid="stSidebar"] .stRadio label {{
+        color: var(--text) !important;
+        font-weight: 600;
     }}
 
     /* === Typography === */
@@ -510,8 +562,10 @@ def apply_theme(mode: str = "dark") -> None:
         text-transform: uppercase; letter-spacing: .08em;
     }}
     .artemis-account .email {{
-        font-weight: 600; color: var(--text);
-        margin-top: .2rem; font-size: .86rem;
+        font-weight: 600;
+        color: var(--text) !important;
+        margin-top: .2rem;
+        font-size: .86rem;
         word-break: break-all;
     }}
     .artemis-account .role {{
@@ -685,6 +739,18 @@ def pipeline_status_card(title: str, status: str, detail: str = "") -> None:
         unsafe_allow_html=True,
     )
 
+def plotly_legend_style() -> dict:
+    mode = get_theme_mode()
+    theme = THEMES[mode]
+    return dict(
+        bgcolor="rgba(17,24,39,0.92)" if mode == "dark" else "rgba(255,255,255,0.92)",
+        bordercolor=theme["border"],
+        borderwidth=1,
+        font=dict(
+            color="#F8FAFC" if mode == "dark" else "#0F172A",
+            size=12,
+        ),
+    )
 
 # =========================================================
 # PLOTLY
