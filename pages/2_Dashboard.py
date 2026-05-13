@@ -2,6 +2,7 @@
 import streamlit as st
 from src.ui import plotly_legend_style
 import plotly.express as px
+import pandas as pd
 from src.queries import load_dashboard_data, load_view
 from src.ui import (
     require_auth, render_sidebar, page_header,
@@ -18,6 +19,10 @@ page_header(
     subtitle="Vue d'ensemble de l'activité mondiale: volume, croissance, leaders.",
     eyebrow="ANALYTICS · OVERVIEW",
 )
+
+if st.button("Actualiser les données", use_container_width=False):
+    st.cache_data.clear()
+    st.rerun()
 
 # Chargement avec gestion d'erreur
 try:
@@ -142,13 +147,31 @@ st.divider()
 
 # ----- Évolution annuelle -----
 st.subheader("Évolution annuelle des lancements")
-fig_year = px.area(
-    lby_filtered, x="year", y="launches",
+chart_years = lby_filtered.sort_values("year")
+missing_years = []
+
+if not chart_years.empty:
+    full_years = pd.DataFrame(
+        {"year": range(int(chart_years["year"].min()), int(chart_years["year"].max()) + 1)}
+    )
+    chart_years = full_years.merge(chart_years, on="year", how="left")
+    missing_years = chart_years[chart_years["launches"].isna()]["year"].astype(int).tolist()
+
+if missing_years:
+    st.warning(
+        "La série historique est encore incomplète: certaines années du backfill ne "
+        "sont pas encore en base. Le graphique coupe volontairement les trous au lieu "
+        "de tracer une tendance artificielle."
+    )
+
+fig_year = px.line(
+    chart_years, x="year", y="launches",
     color_discrete_sequence=[ARTEMIS_COLORS[0]],
+    markers=True,
 )
 fig_year.update_traces(
     line=dict(width=2.5),
-    fillcolor="rgba(99,102,241,0.15)",
+    connectgaps=False,
     hovertemplate="Année %{x}<br>%{y} lancements<extra></extra>",
 )
 style_plotly(fig_year, height=360)
@@ -212,10 +235,39 @@ with col2:
 
 # ----- Croissance -----
 st.subheader("Croissance annuelle (%)")
-growth_filtered = (
-    growth[(growth["year"] >= y_from) & (growth["year"] <= y_to)]
-    if y_from is not None else growth
-)
+growth_source = launches_by_year.sort_values("year")
+growth_filtered = pd.DataFrame(columns=["year", "growth_pct"])
+
+if not growth_source.empty:
+    full_growth_years = pd.DataFrame(
+        {"year": range(int(growth_source["year"].min()), int(growth_source["year"].max()) + 1)}
+    )
+    growth_source = full_growth_years.merge(growth_source, on="year", how="left")
+    growth_source["previous_launches"] = growth_source["launches"].shift(1)
+    growth_source["growth_pct"] = (
+        (growth_source["launches"] - growth_source["previous_launches"])
+        / growth_source["previous_launches"]
+        * 100
+    )
+
+    valid_growth = (
+        growth_source["launches"].notna()
+        & growth_source["previous_launches"].notna()
+        & (growth_source["previous_launches"] >= 10)
+    )
+    growth_source.loc[~valid_growth, "growth_pct"] = pd.NA
+
+    growth_filtered = (
+        growth_source[(growth_source["year"] >= y_from) & (growth_source["year"] <= y_to)]
+        if y_from is not None else growth_source
+    )
+
+if growth_filtered["growth_pct"].isna().any():
+    st.caption(
+        "Les années sans historique continu, ou avec moins de 10 lancements l'année "
+        "précédente, sont masquées pour éviter des pourcentages artificiellement énormes."
+    )
+
 fig_growth = px.bar(
     growth_filtered, x="year", y="growth_pct",
     color="growth_pct",
@@ -231,8 +283,9 @@ fig_growth.update_traces(
 style_plotly(fig_growth, height=320)
 st.plotly_chart(fig_growth, use_container_width=True)
 
-if not growth_filtered.empty:
-    best = growth_filtered.loc[growth_filtered["growth_pct"].idxmax()]
+valid_growth_filtered = growth_filtered.dropna(subset=["growth_pct"])
+if not valid_growth_filtered.empty:
+    best = valid_growth_filtered.loc[valid_growth_filtered["growth_pct"].idxmax()]
     insight(
         f"Croissance maximale en <strong>{int(best['year'])}</strong>: "
         f"<strong>+{best['growth_pct']:.1f}%</strong> vs année précédente."

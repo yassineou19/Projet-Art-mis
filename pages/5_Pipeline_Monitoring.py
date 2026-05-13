@@ -32,8 +32,11 @@ page_header(
 @st.cache_data(ttl=60, show_spinner=False)
 def load_pipeline_runs() -> pd.DataFrame:
     query = """
-    select id, started_at, ended_at, status,
-           rows_raw_upserted, rows_clean_upserted, error_message
+    select id, started_at, ended_at, status, run_type,
+           rows_api_received,
+           rows_raw_upserted, rows_raw_inserted, rows_raw_updated,
+           rows_clean_upserted, rows_clean_inserted, rows_clean_updated,
+           error_message
     from dev.ingestion_runs
     order by started_at desc
     limit 100;
@@ -191,6 +194,17 @@ with c3:
 with c4:
     kpi_card("Durée moyenne run", _fmt_duration(avg_duration_s))
 
+if latest_run is not None:
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        kpi_card("API reçues", format_number(latest_run.get("rows_api_received", 0)))
+    with m2:
+        kpi_card("RAW nouvelles", format_number(latest_run.get("rows_raw_inserted", 0)))
+    with m3:
+        kpi_card("RAW mises à jour", format_number(latest_run.get("rows_raw_updated", 0)))
+    with m4:
+        kpi_card("CLEAN nouvelles", format_number(latest_run.get("rows_clean_inserted", 0)))
+
 st.divider()
 
 # =========================================================
@@ -231,10 +245,14 @@ if not runs.empty:
 
     fig = px.line(
         runs_chart.sort_values("started_at"),
-        x="started_at", y="rows_raw_upserted",
+        x="started_at", y=["rows_raw_inserted", "rows_raw_updated"],
         markers=True,
-        labels={"started_at": "Run time", "rows_raw_upserted": "Rows ingested"},
-        color_discrete_sequence=[theme["cyan"]],
+        labels={
+            "started_at": "Run time",
+            "value": "Rows",
+            "variable": "Metric",
+        },
+        color_discrete_sequence=[theme["success"], theme["cyan"]],
     )
     fig.update_traces(line=dict(width=2.5), marker=dict(size=7))
     style_plotly(fig, height=320)
@@ -258,15 +276,29 @@ if not runs.empty:
             "started_at": st.column_config.DatetimeColumn("Started", format="DD/MM HH:mm"),
             "ended_at": st.column_config.DatetimeColumn("Ended", format="DD/MM HH:mm"),
             "status": st.column_config.TextColumn("Status"),
-            "rows_raw_upserted": st.column_config.NumberColumn("RAW rows"),
-            "rows_clean_upserted": st.column_config.NumberColumn("CLEAN rows"),
+            "run_type": st.column_config.TextColumn("Type"),
+            "rows_api_received": st.column_config.NumberColumn("API"),
+            "rows_raw_upserted": st.column_config.NumberColumn("RAW traitées"),
+            "rows_raw_inserted": st.column_config.NumberColumn("RAW nouvelles"),
+            "rows_raw_updated": st.column_config.NumberColumn("RAW updates"),
+            "rows_clean_upserted": st.column_config.NumberColumn("CLEAN traitées"),
+            "rows_clean_inserted": st.column_config.NumberColumn("CLEAN nouvelles"),
+            "rows_clean_updated": st.column_config.NumberColumn("CLEAN updates"),
             "error_message": st.column_config.TextColumn("Error"),
         },
     )
 
 if latest_run is not None and latest_run["status"] == "success":
-    rows_raw = int(latest_run["rows_raw_upserted"]) if pd.notna(latest_run["rows_raw_upserted"]) else 0
+    rows_inserted = (
+        int(latest_run["rows_raw_inserted"])
+        if pd.notna(latest_run["rows_raw_inserted"]) else 0
+    )
+    rows_updated = (
+        int(latest_run["rows_raw_updated"])
+        if pd.notna(latest_run["rows_raw_updated"]) else 0
+    )
     insight(
         f"Pipeline opérationnel. Dernier run réussi avec "
-        f"<strong>{format_number(rows_raw)}</strong> lignes ingérées."
+        f"<strong>{format_number(rows_inserted)}</strong> nouvelles lignes RAW "
+        f"et <strong>{format_number(rows_updated)}</strong> mises à jour."
     )

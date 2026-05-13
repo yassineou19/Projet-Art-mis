@@ -19,3 +19,29 @@ def fetch_launches(limit: int = 260, offset: int = 0) -> dict:
     response.raise_for_status()
 
     return response.json()
+
+
+def fetch_previous_launches(limit: int = 100) -> dict:
+    """Récupère les derniers lancements passés."""
+    response = requests.get(
+        f"{BASE_URL}/launches/previous/",
+        params={"limit": limit},
+        timeout=30,
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
+
+def fetch_upcoming_launches(limit: int = 100) -> dict:
+    """Récupère les prochains lancements planifiés."""
+    response = requests.get(
+        f"{BASE_URL}/launches/upcoming/",
+        params={"limit": limit},
+        timeout=30,
+    )
+
+    response.raise_for_status()
+
+    return response.json()

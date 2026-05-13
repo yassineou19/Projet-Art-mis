@@ -213,13 +213,15 @@ st.markdown(
         margin: 0;
         font-size: clamp(3.5rem, 6vw, 5.6rem);
         line-height: 0.95;
-        color: #fbfbff;
+        color: #fbfbff !important;
+        -webkit-text-fill-color: #fbfbff !important;
         text-shadow: 0 10px 32px rgba(127, 95, 255, 0.45);
     }
 
     .artemis-subtitle {
         margin: 1.5rem 0 0;
-        color: #9e4cff;
+        color: #9e4cff !important;
+        -webkit-text-fill-color: #9e4cff !important;
         font-size: clamp(1.45rem, 2.3vw, 2rem);
         font-weight: 800;
     }
@@ -235,7 +237,7 @@ st.markdown(
     .artemis-description {
         max-width: 430px;
         margin: 0 0 1.85rem;
-        color: #d0d3e7;
+        color: #d0d3e7 !important;
         font-size: 1.12rem;
         line-height: 1.55;
     }
@@ -267,25 +269,26 @@ st.markdown(
 
     .feature-item strong {
         display: block;
-        color: white;
+        color: white !important;
         font-size: 1.02rem;
     }
 
     .feature-item small {
-        color: #b7bdd6;
+        color: #b7bdd6 !important;
         font-size: 0.92rem;
     }
 
     .form-title {
         margin: 0.35rem 0 0.1rem;
-        color: #fbfbff;
+        color: #fbfbff !important;
+        -webkit-text-fill-color: #fbfbff !important;
         font-size: 1.7rem;
         font-weight: 800;
     }
 
     .form-subtitle {
         margin: 0 0 1.1rem;
-        color: var(--artemis-muted);
+        color: var(--artemis-muted) !important;
         font-size: 1rem;
     }
 
@@ -306,14 +309,22 @@ st.markdown(
     div[data-testid="stTabs"] [role="tab"] {
         flex: 1 1 0;
         justify-content: center;
-        color: #f6f2ff;
+        color: #f6f2ff !important;
+        -webkit-text-fill-color: #f6f2ff !important;
         font-size: 1.04rem;
         font-weight: 800;
         padding: 0.65rem 0 0.9rem;
     }
 
+    div[data-testid="stTabs"] [role="tab"] p,
+    div[data-testid="stTabs"] [role="tab"] span {
+        color: inherit !important;
+        -webkit-text-fill-color: inherit !important;
+    }
+
     div[data-testid="stTabs"] [aria-selected="true"] {
-        color: #c277ff;
+        color: #c277ff !important;
+        -webkit-text-fill-color: #c277ff !important;
     }
 
     div[data-testid="stTabs"] [data-baseweb="tab-highlight"] {
@@ -330,7 +341,17 @@ st.markdown(
 
     label, div[data-testid="stCheckbox"] label {
         color: #f2f4ff !important;
+        -webkit-text-fill-color: #f2f4ff !important;
         font-weight: 700 !important;
+    }
+
+    .st-key-login_card,
+    .st-key-login_card p,
+    .st-key-login_card span,
+    .st-key-login_card label,
+    .st-key-login_card div[data-testid="stMarkdownContainer"],
+    .st-key-login_card div[data-testid="stMarkdownContainer"] p {
+        color: #f2f4ff !important;
     }
 
     .st-key-login_card div[data-baseweb="input"],
@@ -374,11 +395,18 @@ st.markdown(
         min-height: 58px;
         border: 1px solid rgba(177, 129, 255, 0.8);
         border-radius: 10px;
-        color: #ffffff;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
         font-size: 1.04rem;
         font-weight: 800;
         background: linear-gradient(100deg, #7a27ef 0%, #9b4dff 44%, #3e7bff 100%);
         box-shadow: 0 12px 32px rgba(80, 78, 255, 0.34);
+    }
+
+    div[data-testid="stForm"] button[kind="primaryFormSubmit"] p,
+    div[data-testid="stButton"] button p {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
     }
 
     div[data-testid="stButton"] button[kind="secondary"] {
@@ -392,7 +420,8 @@ st.markdown(
         justify-content: flex-end;
         margin-top: -2.1rem;
         margin-bottom: 1rem;
-        color: #a250ff;
+        color: #a250ff !important;
+        -webkit-text-fill-color: #a250ff !important;
         font-weight: 700;
     }
 
@@ -402,7 +431,7 @@ st.markdown(
         align-items: center;
         gap: 1.4rem;
         margin: 1.35rem 0 1rem;
-        color: #aeb5d1;
+        color: #aeb5d1 !important;
     }
 
     .or-divider::before,
