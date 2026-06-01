@@ -1,0 +1,83 @@
+name: Artemis Ingestion Pipeline
+
+on:
+  push:
+    branches:
+      - feature/artemis-ui-v2
+      - feature/ingestion-pipeline
+
+  schedule:
+    - cron: "0 */6 * * *"
+
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Type d'ingestion à lancer"
+        required: true
+        default: "recent"
+        type: choice
+        options:
+          - recent
+          - backfill
+      backfill_runs:
+        description: "Nombre de batches de 100 lancements pour le backfill"
+        required: false
+        default: "10"
+      backfill_sleep_seconds:
+        description: "Pause entre deux batches backfill"
+        required: false
+        default: "60"
+      rate_limit_sleep_seconds:
+        description: "Pause si l'API renvoie 429 Too Many Requests"
+        required: false
+        default: "600"
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run recent ingestion
+        if: github.event_name == 'push' || github.event_name == 'schedule' || github.event.inputs.mode == 'recent'
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_SCHEMA: ${{ secrets.DB_SCHEMA }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+        run: |
+          python -m scripts.run_recent_ingestion
+
+      - name: Run slow historical backfill
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'backfill'
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_SCHEMA: ${{ secrets.DB_SCHEMA }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          BACKFILL_RUNS: ${{ github.event.inputs.backfill_runs }}
+          BACKFILL_SLEEP_SECONDS: ${{ github.event.inputs.backfill_sleep_seconds }}
+          BACKFILL_RATE_LIMIT_SLEEP_SECONDS: ${{ github.event.inputs.rate_limit_sleep_seconds }}
+
+        run: |
+          python -m scripts.backfill_launches
