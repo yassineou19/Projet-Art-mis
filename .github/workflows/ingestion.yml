@@ -3,6 +3,7 @@ name: Artemis Ingestion Pipeline
 on:
   push:
     branches:
+      - main
       - feature/artemis-ui-v2
       - feature/ingestion-pipeline
 
