@@ -1,6 +1,14 @@
 """Page de connexion / inscription inspiree de la maquette Artemis."""
 import streamlit as st
-from src.auth import login, signup
+from streamlit.components.v1 import html
+
+from src.auth import (
+    login,
+    request_password_reset,
+    set_recovery_session,
+    signup,
+    update_password,
+)
 from src.profiles import (
     FALLBACK_SUBSCRIPTION_PLANS,
     create_user_profile,
@@ -9,8 +17,82 @@ from src.profiles import (
 )
 
 
-if st.session_state.get("user") is not None:
-    st.rerun()
+html(
+    """
+    <script>
+    const hash = window.location.hash;
+    if (hash && hash.includes("access_token") && hash.includes("refresh_token")) {
+      const params = new URLSearchParams(hash.slice(1));
+      const target = new URL(window.location.href);
+      target.hash = "";
+      for (const [key, value] of params.entries()) {
+        target.searchParams.set(key, value);
+      }
+      window.location.replace(target.toString());
+    }
+    </script>
+    """,
+    height=0,
+)
+
+
+def query_value(name: str) -> str | None:
+    value = st.query_params.get(name)
+    if isinstance(value, list):
+        return value[0] if value else None
+    return value
+
+
+def render_password_recovery() -> None:
+    access_token = query_value("access_token")
+    refresh_token = query_value("refresh_token")
+    reset_type = query_value("type")
+
+    if not access_token or not refresh_token or reset_type != "recovery":
+        return
+
+    st.markdown(
+        """
+        <div class="auth-shell">
+          <div class="auth-panel full">
+            <h3 class="form-title">Reinitialiser le mot de passe</h3>
+            <p class="form-subtitle">Choisissez un nouveau mot de passe Artemis.</p>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    try:
+        set_recovery_session(access_token, refresh_token)
+    except Exception as error:
+        show_config_error(
+            "Lien de reinitialisation invalide ou expire. Demandez un nouveau lien.",
+            error,
+        )
+        st.markdown("</div></div>", unsafe_allow_html=True)
+        st.stop()
+
+    with st.form("reset_password_form"):
+        new_password = st.text_input("Nouveau mot de passe", type="password")
+        confirm_password = st.text_input("Confirmer le mot de passe", type="password")
+        submit_reset = st.form_submit_button("Mettre a jour le mot de passe", type="primary")
+
+    if submit_reset:
+        if len(new_password) < 8:
+            st.error("Le mot de passe doit contenir au moins 8 caracteres.")
+        elif new_password != confirm_password:
+            st.error("Les deux mots de passe ne correspondent pas.")
+        else:
+            try:
+                update_password(new_password)
+            except Exception as error:
+                show_config_error("Impossible de mettre a jour le mot de passe.", error)
+            else:
+                st.query_params.clear()
+                st.success("Mot de passe mis a jour. Vous pouvez vous connecter.")
+                st.stop()
+
+    st.markdown("</div></div>", unsafe_allow_html=True)
+    st.stop()
 
 
 USER_TYPE_OPTIONS = {
@@ -560,6 +642,12 @@ st.markdown(
 )
 
 
+render_password_recovery()
+
+if st.session_state.get("user") is not None:
+    st.rerun()
+
+
 left, right = st.columns([0.92, 1.08], gap="large")
 
 with left:
@@ -621,7 +709,6 @@ with right:
                     autocomplete="current-password",
                 )
                 remember = st.checkbox("Se souvenir de moi", value=True)
-                st.markdown('<div class="forgot-link">Mot de passe oublie ?</div>', unsafe_allow_html=True)
                 submit = st.form_submit_button(
                     "Se connecter",
                     use_container_width=True,
@@ -665,6 +752,26 @@ with right:
                                     st.session_state["remember_me"] = remember
                                     st.success("Connexion reussie. Redirection...")
                                     st.rerun()
+
+            with st.expander("Mot de passe oublie ?"):
+                reset_email = st.text_input(
+                    "Email du compte",
+                    value=email,
+                    key="reset_password_email",
+                    autocomplete="email",
+                )
+                if st.button("Envoyer le lien de reinitialisation", use_container_width=True):
+                    if not reset_email:
+                        st.error("Veuillez renseigner votre email.")
+                    else:
+                        try:
+                            request_password_reset(reset_email)
+                        except Exception as error:
+                            show_config_error("Impossible d'envoyer le lien de reinitialisation.", error)
+                        else:
+                            st.success(
+                                "Si ce compte existe, un email de reinitialisation vient d'etre envoye."
+                            )
 
             st.markdown('<div class="or-divider">ou</div>', unsafe_allow_html=True)
             if st.button("G  Continuer avec Google", use_container_width=True):
