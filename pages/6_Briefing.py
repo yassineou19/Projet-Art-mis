@@ -257,6 +257,7 @@ if user_type == "journalist":
                 file_name="artemis_briefing_agencies.csv",
                 mime="text/csv",
                 use_container_width=True,
+                type="primary",
             )
     else:
         section_title("Graphique recommande")
@@ -373,6 +374,7 @@ else:
                 file_name="artemis_briefing_launches_by_year.csv",
                 mime="text/csv",
                 use_container_width=True,
+                type="primary",
             )
     else:
         section_title("Evolution simplifiee")

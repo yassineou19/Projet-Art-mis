@@ -85,8 +85,9 @@ avg_duration_s = None
 last_run_ago = "—"
 
 if not runs.empty:
-    success_count = int((runs["status"] == "success").sum())
-    success_rate = (success_count / len(runs)) * 100
+    health_runs = runs[runs["status"] != "rate_limited"]
+    success_count = int((health_runs["status"] == "success").sum())
+    success_rate = (success_count / len(health_runs)) * 100 if not health_runs.empty else 100
 
     runs_with_duration = runs.dropna(subset=["started_at", "ended_at"]).copy()
     if not runs_with_duration.empty:
@@ -211,7 +212,24 @@ st.divider()
 # ALERTES
 # =========================================================
 
-errors = runs[runs["status"] == "error"] if not runs.empty else pd.DataFrame()
+rate_limited = runs[runs["status"] == "rate_limited"] if not runs.empty else pd.DataFrame()
+errors = runs[runs["status"].isin(["error", "failed"])] if not runs.empty else pd.DataFrame()
+
+if not rate_limited.empty:
+    section_title("Quota API")
+    st.markdown(
+        f"""
+        <div class="artemis-card" style="border-left: 3px solid var(--warning);">
+            <div style="display:flex; align-items:center; gap:.6rem;">
+                <span class="artemis-status warning"><span class="dot"></span>{len(rate_limited)} rate limit</span>
+                <span class="artemis-muted">
+                    The Space Devs a temporairement limité les appels API. Le backfill reprendra plus tard.
+                </span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 if not errors.empty:
     section_title("Alertes")

@@ -377,6 +377,16 @@ st.markdown(
         font-weight: 650;
     }
 
+    .st-key-login_card input:-webkit-autofill,
+    .st-key-login_card input:-webkit-autofill:hover,
+    .st-key-login_card input:-webkit-autofill:focus {
+        box-shadow: 0 0 0 1000px rgba(12, 16, 40, 0.96) inset !important;
+        -webkit-box-shadow: 0 0 0 1000px rgba(12, 16, 40, 0.96) inset !important;
+        -webkit-text-fill-color: #ffffff !important;
+        caret-color: #ffffff !important;
+        transition: background-color 9999s ease-in-out 0s;
+    }
+
     .st-key-login_card input::placeholder {
         color: rgba(219, 224, 245, 0.68) !important;
         -webkit-text-fill-color: rgba(219, 224, 245, 0.68) !important;

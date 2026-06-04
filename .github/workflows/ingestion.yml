@@ -7,7 +7,7 @@ on:
       - feature/ingestion-pipeline
 
   schedule:
-    - cron: "0 */6 * * *"
+    - cron: "17 */2 * * *"
 
   workflow_dispatch:
     inputs:
@@ -20,17 +20,21 @@ on:
           - recent
           - backfill
       backfill_runs:
-        description: "Nombre de batches de 100 lancements pour le backfill"
+        description: "Nombre max d'appels API pour le backfill historique"
         required: false
-        default: "10"
+        default: "12"
       backfill_sleep_seconds:
         description: "Pause entre deux batches backfill"
         required: false
-        default: "60"
+        default: "300"
       rate_limit_sleep_seconds:
-        description: "Pause si l'API renvoie 429 Too Many Requests"
+        description: "Marge d'appels API conservée pour éviter le 429"
         required: false
-        default: "600"
+        default: "3"
+
+concurrency:
+  group: artemis-ingestion
+  cancel-in-progress: false
 
 jobs:
   ingest:
@@ -64,6 +68,25 @@ jobs:
         run: |
           python -m scripts.run_recent_ingestion
 
+      - name: Audit historical coverage
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'backfill'
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_SCHEMA: ${{ secrets.DB_SCHEMA }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          THESPACEDEVS_API_KEY: ${{ secrets.THESPACEDEVS_API_KEY }}
+          HISTORICAL_AUDIT_MAX_YEARS: "5"
+          HISTORICAL_AUDIT_SLEEP_SECONDS: "300"
+          HISTORICAL_RESERVED_API_CALLS: ${{ github.event.inputs.rate_limit_sleep_seconds }}
+
+        run: |
+          python -m scripts.audit_historical_years
+
       - name: Run slow historical backfill
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'backfill'
         env:
@@ -75,9 +98,11 @@ jobs:
           DB_SCHEMA: ${{ secrets.DB_SCHEMA }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          BACKFILL_RUNS: ${{ github.event.inputs.backfill_runs }}
-          BACKFILL_SLEEP_SECONDS: ${{ github.event.inputs.backfill_sleep_seconds }}
-          BACKFILL_RATE_LIMIT_SLEEP_SECONDS: ${{ github.event.inputs.rate_limit_sleep_seconds }}
+          THESPACEDEVS_API_KEY: ${{ secrets.THESPACEDEVS_API_KEY }}
+          HISTORICAL_BACKFILL_MAX_YEARS: "1"
+          HISTORICAL_BACKFILL_SLEEP_SECONDS: ${{ github.event.inputs.backfill_sleep_seconds }}
+          HISTORICAL_BACKFILL_MAX_API_CALLS: ${{ github.event.inputs.backfill_runs }}
+          HISTORICAL_RESERVED_API_CALLS: ${{ github.event.inputs.rate_limit_sleep_seconds }}
 
         run: |
-          python -m scripts.backfill_launches
+          python -m scripts.backfill_historical_years

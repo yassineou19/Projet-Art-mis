@@ -2,6 +2,8 @@
 
 from datetime import datetime, timezone
 
+import requests
+
 from src.database import connection
 from src.ingestion.api_client import (
     fetch_launches,
@@ -15,6 +17,15 @@ from src.ingestion.transform import transform_launches
 PIPELINE_NAME = "launches_pipeline"
 LIMIT = 100
 RECENT_LIMIT = 100
+
+
+def is_rate_limit_error(error: Exception) -> bool:
+    """Retourne True si l'API The Space Devs renvoie une limite de débit."""
+    return (
+        isinstance(error, requests.HTTPError)
+        and error.response is not None
+        and error.response.status_code == 429
+    )
 
 
 def create_ingestion_run(run_type: str = "backfill") -> int:
@@ -274,6 +285,14 @@ def run_pipeline() -> None:
         )
 
     except Exception as e:
+        if is_rate_limit_error(e):
+            finish_ingestion_run(
+                run_id=run_id,
+                status="rate_limited",
+                error_message=str(e),
+            )
+            raise
+
         finish_ingestion_run(
             run_id=run_id,
             status="error",
@@ -304,6 +323,14 @@ def run_recent_pipeline() -> None:
         process_launch_results(run_id=run_id, results=results)
 
     except Exception as e:
+        if is_rate_limit_error(e):
+            finish_ingestion_run(
+                run_id=run_id,
+                status="rate_limited",
+                error_message=str(e),
+            )
+            raise
+
         finish_ingestion_run(
             run_id=run_id,
             status="error",

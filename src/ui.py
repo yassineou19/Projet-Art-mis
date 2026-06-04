@@ -163,6 +163,56 @@ def apply_theme(mode: str = "dark") -> None:
         color: var(--text);
     }}
     [data-testid="stHeader"] {{ background: transparent; }}
+    [data-testid="stToolbar"] button,
+    [data-testid="stToolbar"] button * {{
+        color: var(--text) !important;
+        -webkit-text-fill-color: var(--text) !important;
+    }}
+    [data-testid="stToolbar"] svg {{
+        color: var(--text) !important;
+        fill: currentColor !important;
+    }}
+    #MainMenu,
+    [data-testid="stMainMenu"],
+    div[data-baseweb="popover"] > div:has([role="menu"]),
+    div[data-baseweb="popover"] [role="menu"] {{
+        background: var(--card) !important;
+        border: 1px solid var(--border) !important;
+        box-shadow: 0 18px 45px rgba(15,23,42,0.18) !important;
+    }}
+    #MainMenu ul,
+    [data-testid="stMainMenu"] ul,
+    div[data-baseweb="popover"] [role="menu"],
+    div[data-baseweb="popover"] ul[data-baseweb="menu"] {{
+        background: var(--card) !important;
+    }}
+    #MainMenu li,
+    [data-testid="stMainMenu"] li,
+    div[data-baseweb="popover"] [role="menuitem"],
+    div[data-baseweb="popover"] ul[data-baseweb="menu"] li {{
+        background: var(--card) !important;
+    }}
+    #MainMenu li:hover,
+    [data-testid="stMainMenu"] li:hover,
+    div[data-baseweb="popover"] [role="menuitem"]:hover,
+    div[data-baseweb="popover"] ul[data-baseweb="menu"] li:hover {{
+        background: var(--card-soft) !important;
+    }}
+    #MainMenu *,
+    [data-testid="stMainMenu"] *,
+    div[data-baseweb="popover"] [role="menu"] *,
+    div[data-baseweb="popover"] ul[data-baseweb="menu"] * {{
+        color: var(--text) !important;
+        -webkit-text-fill-color: var(--text) !important;
+        opacity: 1 !important;
+    }}
+    #MainMenu [aria-disabled="true"] *,
+    [data-testid="stMainMenu"] [aria-disabled="true"] *,
+    div[data-baseweb="popover"] ul[data-baseweb="menu"] li[aria-disabled="true"] *,
+    div[data-baseweb="popover"] [role="menuitem"][aria-disabled="true"] * {{
+        color: var(--muted) !important;
+        -webkit-text-fill-color: var(--muted) !important;
+    }}
     .main .block-container {{
         padding-top: 1.5rem;
         padding-bottom: 3rem;
@@ -267,6 +317,30 @@ def apply_theme(mode: str = "dark") -> None:
     .stButton > button:hover, .stFormSubmitButton > button:hover {{
         transform: translateY(-1px);
         box-shadow: 0 10px 24px rgba(124,58,237,0.35);
+    }}
+    .stDownloadButton > button,
+    [data-testid="stDownloadButton"] button {{
+        background: linear-gradient(135deg, var(--primary), var(--blue)) !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 10px;
+        padding: 0.55rem 1.2rem;
+        font-weight: 600;
+        box-shadow: 0 6px 18px rgba(124,58,237,0.25);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }}
+    .stDownloadButton > button:hover,
+    [data-testid="stDownloadButton"] button:hover {{
+        color: #fff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(124,58,237,0.35);
+    }}
+    .stButton > button *,
+    .stFormSubmitButton > button *,
+    .stDownloadButton > button *,
+    [data-testid="stDownloadButton"] button * {{
+        color: inherit !important;
+        -webkit-text-fill-color: inherit !important;
     }}
     .stButton > button[kind="secondary"] {{
         background: var(--card);
@@ -722,6 +796,7 @@ def status_badge(status: str) -> str:
         "healthy":     ("success", "Healthy"),
         "running":     ("warning", "Running"),
         "in_progress": ("warning", "In progress"),
+        "rate_limited": ("warning", "Rate limited"),
         "warning":     ("warning", "Warning"),
         "error":       ("danger",  "Error"),
         "failed":      ("danger",  "Failed"),
