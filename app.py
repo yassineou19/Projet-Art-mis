@@ -65,7 +65,7 @@ else:
         pages["Administration"] = [
             st.Page(
                 "pages/5_Pipeline_Monitoring.py",
-                title="Pipeline Monitoring",
+                title="Data Control Center",
                 icon=":material/monitoring:",
             ),
         ]
