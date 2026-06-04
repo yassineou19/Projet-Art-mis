@@ -27,6 +27,12 @@ def show_auth_error(action: str) -> None:
     )
 
 
+def show_config_error(message: str, error: Exception) -> None:
+    """Affiche une erreur de configuration sans masquer l'étape qui bloque."""
+    st.error(message)
+    st.caption(f"{type(error).__name__}: {error}")
+
+
 @st.cache_data(ttl=300, show_spinner=False)
 def get_signup_subscription_plans() -> list[dict]:
     """Charge les offres pour le formulaire d'inscription."""
@@ -628,18 +634,37 @@ with right:
                 else:
                     try:
                         response = login(email, password)
-                        if response and response.user:
-                            st.session_state["user"] = response.user
-                            st.session_state["profile"] = load_user_profile(
-                                response.user.id
-                            )
-                            st.session_state["remember_me"] = remember
-                            st.success("Connexion reussie. Redirection...")
-                            st.rerun()
-                        else:
+                    except Exception as error:
+                        show_config_error(
+                            "Authentification Supabase impossible. Verifiez SUPABASE_URL, "
+                            "SUPABASE_ANON_KEY ou les identifiants du compte.",
+                            error,
+                        )
+                    else:
+                        if not response or not response.user:
                             st.error("Identifiants invalides.")
-                    except Exception:
-                        show_auth_error("Connexion")
+                        else:
+                            try:
+                                profile = load_user_profile(response.user.id)
+                            except Exception as error:
+                                show_config_error(
+                                    "Authentification reussie, mais chargement du profil "
+                                    "PostgreSQL impossible. Verifiez les secrets DB_* "
+                                    "sur Streamlit Cloud.",
+                                    error,
+                                )
+                            else:
+                                if profile is None:
+                                    st.error(
+                                        "Compte authentifie, mais profil Artemis introuvable "
+                                        "dans public.user_profiles."
+                                    )
+                                else:
+                                    st.session_state["user"] = response.user
+                                    st.session_state["profile"] = profile
+                                    st.session_state["remember_me"] = remember
+                                    st.success("Connexion reussie. Redirection...")
+                                    st.rerun()
 
             st.markdown('<div class="or-divider">ou</div>', unsafe_allow_html=True)
             if st.button("G  Continuer avec Google", use_container_width=True):
