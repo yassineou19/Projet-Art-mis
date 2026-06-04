@@ -127,24 +127,53 @@ def get_signup_subscription_plans() -> list[dict]:
 def format_plan_option(plan: dict) -> str:
     """Libellé lisible d'une offre dans le selectbox."""
     price = int(plan["price_monthly_eur"])
+    plan_id = plan["id"]
+    intent = {
+        "free": "Explorer",
+        "pro": "Analyser et exporter",
+        "premium": "Anticiper et presenter",
+    }.get(plan_id, "Artemis")
     if price == 0:
-        return f"{plan['name']} - gratuit"
-    return f"{plan['name']} - {price} EUR/mois"
+        return f"{plan['name']} - {intent} - gratuit"
+    return f"{plan['name']} - {intent} - {price} EUR/mois"
+
+
+PLAN_VALUE_PROPS = {
+    "free": {
+        "promise": "Decouvrir Artemis sans friction",
+        "audience": "Ideal pour verifier les KPIs, comprendre la serie historique et preparer une premiere lecture.",
+        "impact": "Vous gagnez une vision claire du marche sans construire de dashboard vous-meme.",
+        "accent": "#9b8cff",
+    },
+    "pro": {
+        "promise": "Passer de l'observation a l'analyse",
+        "audience": "Fait pour les utilisateurs qui comparent pays, agences et periodes, puis exportent vers reporting ou notebooks.",
+        "impact": "Vous gagnez du temps d'analyse et des donnees exploitables pour vos livrables.",
+        "accent": "#4f8cff",
+    },
+    "premium": {
+        "promise": "Transformer la data en veille strategique",
+        "audience": "Concu pour les demos executives, les analyses editoriales et les signaux a surveiller dans le temps.",
+        "impact": "Vous gagnez une lecture priorisee: quoi regarder, pourquoi, et ou aller ensuite.",
+        "accent": "#c277ff",
+    },
+}
 
 
 def render_plan_details(plan: dict) -> None:
     """Affiche le détail de l'offre sélectionnée."""
     price = int(plan["price_monthly_eur"])
     price_label = "Gratuit" if price == 0 else f"{price} EUR / mois"
+    value = PLAN_VALUE_PROPS.get(plan["id"], PLAN_VALUE_PROPS["free"])
     features_html = ""
 
     for item in plan.get("features", []):
-        marker = "✓" if item["is_included"] else "Verrouille"
+        marker = "Inclus" if item["is_included"] else "Upgrade"
         color = "#86efac" if item["is_included"] else "#c4b5fd"
         opacity = "1" if item["is_included"] else "0.68"
         features_html += (
-            f'<div style="display:flex;align-items:flex-start;gap:.55rem;opacity:{opacity};">'
-            f'<span style="color:{color};font-weight:800;min-width:4.8rem;">{marker}</span>'
+            f'<div style="display:flex;align-items:flex-start;gap:.65rem;opacity:{opacity};line-height:1.38;">'
+            f'<span style="color:{color};font-weight:850;min-width:4.4rem;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;">{marker}</span>'
             f"<span>{item['feature']}</span>"
             "</div>"
         )
@@ -153,30 +182,55 @@ def render_plan_details(plan: dict) -> None:
         f"""
         <div style="
             margin:.65rem 0 1rem;
-            padding:1rem;
+            padding:1.05rem;
             border:1px solid rgba(202,210,255,.18);
             border-radius:14px;
-            background:rgba(12,16,40,.58);
+            background:
+                linear-gradient(135deg, rgba(12,16,40,.82), rgba(16,20,48,.62)),
+                radial-gradient(circle at 92% 8%, {value['accent']}33, transparent 28%);
         ">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;">
                 <div>
                     <div style="color:#c277ff;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;">
                         Offre selectionnee
                     </div>
-                    <div style="color:#fff;font-size:1.15rem;font-weight:850;margin-top:.15rem;">
+                    <div style="color:#fff;font-size:1.22rem;font-weight:850;margin-top:.15rem;">
                         {plan['name']}
                     </div>
                 </div>
-                <div style="color:#fff;font-weight:850;white-space:nowrap;">
+                <div style="color:#fff;font-weight:850;white-space:nowrap;font-size:1.02rem;">
                     {price_label}
                 </div>
             </div>
-            <p style="color:#b7bdd6;margin:.7rem 0 .8rem;line-height:1.45;">
+            <div style="
+                margin:.9rem 0 .75rem;
+                padding:.8rem .9rem;
+                border-left:3px solid {value['accent']};
+                background:rgba(255,255,255,.045);
+                border-radius:10px;
+            ">
+                <div style="color:#fff;font-weight:850;font-size:1rem;">{value['promise']}</div>
+                <p style="color:#cfd4ec;margin:.35rem 0 0;line-height:1.45;font-size:.9rem;">
+                    {value['audience']}
+                </p>
+            </div>
+            <p style="color:#b7bdd6;margin:.75rem 0 .8rem;line-height:1.45;">
                 {plan['description']}
             </p>
-            <div style="display:grid;gap:.45rem;color:#f7f7ff;font-size:.9rem;">
+            <div style="
+                color:#f7f7ff;
+                font-size:.93rem;
+                font-weight:800;
+                margin:.85rem 0 .45rem;
+            ">
+                Ce que ce plan debloque
+            </div>
+            <div style="display:grid;gap:.5rem;color:#f7f7ff;font-size:.9rem;">
                 {features_html}
             </div>
+            <p style="color:#e7ddff;margin:.95rem 0 0;font-weight:750;line-height:1.42;">
+                {value['impact']}
+            </p>
         </div>
         """,
         unsafe_allow_html=True,
