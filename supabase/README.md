@@ -67,3 +67,15 @@ Current semantic views:
 - `dev_semantic.ml_launch_features`
 
 The Streamlit app still uses the existing `dev` views. We can migrate dashboard pages to `dev_semantic` progressively.
+
+## Semantic quality v1
+
+`migrations/20260604133000_semantic_quality_v1.sql` adds quality and coverage views:
+
+- `dev_semantic.data_coverage_by_year`
+- `dev_semantic.data_quality_summary`
+- `dev_semantic.data_quality_by_year`
+- `dev_semantic.semantic_health_overview`
+- `dev_semantic.backfill_priority_queue`
+
+These views make it explicit which years are complete, which years need audit/backfill, and whether the semantic layer has missing values that could weaken dashboards or machine learning.
