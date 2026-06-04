@@ -3,6 +3,7 @@ name: Artemis Ingestion Pipeline
 on:
   push:
     branches:
+      - main
       - feature/artemis-ui-v2
       - feature/ingestion-pipeline
 
@@ -64,6 +65,7 @@ jobs:
           DB_SCHEMA: ${{ secrets.DB_SCHEMA }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          THESPACEDEVS_API_KEY: ${{ secrets.THESPACEDEVS_API_KEY }}
 
         run: |
           python -m scripts.run_recent_ingestion
