@@ -8,7 +8,6 @@ import streamlit as st
 
 from src.database import connection
 from src.ui import (
-    ARTEMIS_COLORS,
     format_number,
     get_theme,
     insight,
@@ -379,14 +378,15 @@ def render_quality_tab(
     section_title("Couverture historique")
 
     if not coverage.empty:
+        theme = get_theme()
         category_order = ["complete", "partial", "missing", "audit_needed", "unknown", "review"]
         category_colors = {
-            "complete": ARTEMIS_COLORS["success"],
-            "partial": ARTEMIS_COLORS["warning"],
-            "missing": ARTEMIS_COLORS["danger"],
-            "audit_needed": ARTEMIS_COLORS["cyan"],
-            "unknown": ARTEMIS_COLORS["muted"],
-            "review": ARTEMIS_COLORS["purple"],
+            "complete": theme["success"],
+            "partial": theme["warning"],
+            "missing": theme["danger"],
+            "audit_needed": theme["cyan"],
+            "unknown": theme["muted"],
+            "review": theme["primary"],
         }
 
         fig = px.bar(
@@ -444,6 +444,7 @@ def render_quality_tab(
 
     section_title("Qualité par année")
     if not quality_by_year.empty:
+        theme = get_theme()
         fig_quality = px.line(
             quality_by_year,
             x="year",
@@ -451,10 +452,10 @@ def render_quality_tab(
             markers=True,
             labels={"year": "Année", "value": "Lignes", "variable": "Contrôle"},
             color_discrete_sequence=[
-                ARTEMIS_COLORS["cyan"],
-                ARTEMIS_COLORS["warning"],
-                ARTEMIS_COLORS["danger"],
-                ARTEMIS_COLORS["purple"],
+                theme["cyan"],
+                theme["warning"],
+                theme["danger"],
+                theme["primary"],
             ],
         )
         style_plotly(fig_quality, height=320)
