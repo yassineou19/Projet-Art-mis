@@ -158,6 +158,74 @@ def _status_class(success_rate: float) -> tuple[str, str]:
     return "Degraded", "danger"
 
 
+QUALITY_CONTROLS = {
+    "missing_coordinates": "Coordonnées manquantes",
+    "missing_agency": "Agences manquantes",
+    "missing_country": "Pays manquants",
+    "other_status_category": "Statuts non classés",
+}
+
+
+def render_quality_by_year(quality_by_year: pd.DataFrame) -> None:
+    section_title("Qualité par année")
+    if quality_by_year.empty:
+        st.info("Aucune donnée de qualité annuelle disponible.")
+        return
+
+    control_columns = list(QUALITY_CONTROLS.keys())
+    totals = quality_by_year[control_columns].sum(numeric_only=True)
+    total_issues = int(totals.sum())
+
+    if total_issues == 0:
+        st.success("Aucune anomalie détectée sur les contrôles qualité suivis.")
+        c1, c2, c3, c4 = st.columns(4)
+        cards = [
+            (c1, "Coordonnées", "0 manquante"),
+            (c2, "Agences", "0 manquante"),
+            (c3, "Pays", "0 manquant"),
+            (c4, "Statuts", "0 non classé"),
+        ]
+        for col, label, value in cards:
+            with col:
+                kpi_card(label, value, delta="OK")
+
+        complete_years = int(quality_by_year["is_complete_year"].sum())
+        tracked_years = len(quality_by_year)
+        insight(
+            f"Les champs critiques sont complets sur les <strong>{tracked_years}</strong> années "
+            f"présentes dans la table qualité. <strong>{complete_years}</strong> années sont validées "
+            "comme complètes pour les analyses historiques."
+        )
+        return
+
+    issue_columns = [column for column in control_columns if int(totals[column]) > 0]
+    chart_data = quality_by_year[["year", *issue_columns]].melt(
+        id_vars="year",
+        var_name="control",
+        value_name="issues",
+    )
+    chart_data = chart_data[chart_data["issues"] > 0]
+    chart_data["control"] = chart_data["control"].map(QUALITY_CONTROLS)
+
+    theme = get_theme()
+    fig_quality = px.bar(
+        chart_data,
+        x="year",
+        y="issues",
+        color="control",
+        labels={"year": "Année", "issues": "Lignes à corriger", "control": "Contrôle"},
+        color_discrete_sequence=[
+            theme["cyan"],
+            theme["warning"],
+            theme["danger"],
+            theme["primary"],
+        ],
+    )
+    fig_quality.update_yaxes(rangemode="tozero")
+    style_plotly(fig_quality, height=340)
+    st.plotly_chart(fig_quality, use_container_width=True)
+
+
 def render_pipeline_tab(
     runs: pd.DataFrame,
     state: pd.DataFrame,
@@ -442,25 +510,9 @@ def render_quality_tab(
             },
         )
 
-    section_title("Qualité par année")
-    if not quality_by_year.empty:
-        theme = get_theme()
-        fig_quality = px.line(
-            quality_by_year,
-            x="year",
-            y=["missing_coordinates", "missing_agency", "missing_country", "other_status_category"],
-            markers=True,
-            labels={"year": "Année", "value": "Lignes", "variable": "Contrôle"},
-            color_discrete_sequence=[
-                theme["cyan"],
-                theme["warning"],
-                theme["danger"],
-                theme["primary"],
-            ],
-        )
-        style_plotly(fig_quality, height=320)
-        st.plotly_chart(fig_quality, use_container_width=True)
+    render_quality_by_year(quality_by_year)
 
+    if not quality_by_year.empty:
         st.dataframe(
             quality_by_year.sort_values("year"),
             use_container_width=True,
