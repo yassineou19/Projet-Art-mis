@@ -15,19 +15,20 @@ on:
       mode:
         description: "Type d'ingestion à lancer"
         required: true
-        default: "recent"
+        default: "maintenance"
         type: choice
         options:
           - recent
           - backfill
+          - maintenance
       backfill_runs:
         description: "Nombre max d'appels API pour le backfill historique"
         required: false
-        default: "12"
+        default: "8"
       backfill_sleep_seconds:
         description: "Pause entre deux batches backfill"
         required: false
-        default: "300"
+        default: "90"
       rate_limit_sleep_seconds:
         description: "Marge d'appels API conservée pour éviter le 429"
         required: false
@@ -55,7 +56,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run recent ingestion
-        if: github.event_name == 'push' || github.event_name == 'schedule' || github.event.inputs.mode == 'recent'
+        if: github.event_name == 'push' || github.event_name == 'schedule' || github.event.inputs.mode == 'recent' || github.event.inputs.mode == 'maintenance'
         env:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_NAME: ${{ secrets.DB_NAME }}
@@ -71,7 +72,7 @@ jobs:
           python -m scripts.run_recent_ingestion
 
       - name: Audit historical coverage
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'backfill'
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.mode == 'backfill' || github.event.inputs.mode == 'maintenance'))
         env:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_NAME: ${{ secrets.DB_NAME }}
@@ -83,14 +84,14 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           THESPACEDEVS_API_KEY: ${{ secrets.THESPACEDEVS_API_KEY }}
           HISTORICAL_AUDIT_MAX_YEARS: "5"
-          HISTORICAL_AUDIT_SLEEP_SECONDS: "300"
-          HISTORICAL_RESERVED_API_CALLS: ${{ github.event.inputs.rate_limit_sleep_seconds }}
+          HISTORICAL_AUDIT_SLEEP_SECONDS: "75"
+          HISTORICAL_RESERVED_API_CALLS: ${{ github.event.inputs.rate_limit_sleep_seconds || 3 }}
 
         run: |
           python -m scripts.audit_historical_years
 
       - name: Run slow historical backfill
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'backfill'
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.mode == 'backfill' || github.event.inputs.mode == 'maintenance'))
         env:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_NAME: ${{ secrets.DB_NAME }}
@@ -102,9 +103,9 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           THESPACEDEVS_API_KEY: ${{ secrets.THESPACEDEVS_API_KEY }}
           HISTORICAL_BACKFILL_MAX_YEARS: "1"
-          HISTORICAL_BACKFILL_SLEEP_SECONDS: ${{ github.event.inputs.backfill_sleep_seconds }}
-          HISTORICAL_BACKFILL_MAX_API_CALLS: ${{ github.event.inputs.backfill_runs }}
-          HISTORICAL_RESERVED_API_CALLS: ${{ github.event.inputs.rate_limit_sleep_seconds }}
+          HISTORICAL_BACKFILL_SLEEP_SECONDS: ${{ github.event.inputs.backfill_sleep_seconds || 90 }}
+          HISTORICAL_BACKFILL_MAX_API_CALLS: ${{ github.event.inputs.backfill_runs || 8 }}
+          HISTORICAL_RESERVED_API_CALLS: ${{ github.event.inputs.rate_limit_sleep_seconds || 3 }}
 
         run: |
           python -m scripts.backfill_historical_years
