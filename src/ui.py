@@ -87,6 +87,18 @@ def get_user_email(user) -> str:
     return "—"
 
 
+def get_user_id(user) -> str | None:
+    """Retourne l'identifiant Supabase d'un utilisateur authentifié."""
+    if user is None:
+        return None
+    user_id = getattr(user, "id", None)
+    if user_id:
+        return str(user_id)
+    if isinstance(user, dict) and user.get("id"):
+        return str(user["id"])
+    return None
+
+
 def is_admin(user) -> bool:
     if user is None:
         return False

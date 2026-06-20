@@ -47,3 +47,40 @@ def load_dashboard_data() -> dict:
         "launches_by_country": load_view("launches_by_country"),
         "growth": load_view("launches_growth_by_year"),
     }
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def load_launch_ml_data() -> pd.DataFrame:
+    """Charge les caractéristiques pré-lancement et le résultat observé."""
+    query = """
+        SELECT
+            clean.launch_id,
+            clean.launch_name,
+            clean.launch_date,
+            clean.agency,
+            clean.country,
+            clean.latitude,
+            clean.longitude,
+            clean.status,
+            raw.payload->'rocket'->'configuration'->>'name' AS rocket,
+            raw.payload->'mission'->'orbit'->>'abbrev' AS orbit,
+            raw.payload->'mission'->>'type' AS mission_type,
+            raw.payload->'launch_service_provider'->'type'->>'name' AS agency_type,
+            raw.payload->'pad'->>'name' AS pad,
+            NULLIF(raw.payload->>'agency_launch_attempt_count', '')::float
+                AS agency_attempts,
+            NULLIF(raw.payload->>'pad_launch_attempt_count', '')::float
+                AS pad_attempts,
+            NULLIF(raw.payload->>'location_launch_attempt_count', '')::float
+                AS location_attempts,
+            NULLIF(raw.payload->>'orbital_launch_attempt_count', '')::float
+                AS orbital_attempts
+        FROM dev.launches_clean AS clean
+        JOIN dev.launches_raw AS raw
+          ON raw.payload->>'id' = clean.launch_id
+        WHERE clean.launch_date IS NOT NULL
+        ORDER BY clean.launch_date
+    """
+
+    with connection() as conn:
+        return pd.read_sql(query, conn)

@@ -24,39 +24,36 @@ FALLBACK_SUBSCRIPTION_PLANS = [
         "id": "free",
         "name": "Free",
         "price_monthly_eur": 0,
-        "description": "Pour explorer les tendances spatiales et valider l'interet du produit.",
+        "description": "Pour découvrir Artemis et tester le risque de lancement.",
         "features": [
-            {"feature": "Vue d'ensemble des lancements et KPIs essentiels", "is_included": True},
-            {"feature": "Briefing d'apercu pour comprendre les tendances majeures", "is_included": True},
-            {"feature": "Analyses detaillees par pays, agence et periode", "is_included": False},
-            {"feature": "Exports CSV pour travailler hors plateforme", "is_included": False},
-            {"feature": "Signaux de veille et recommandations Premium", "is_included": False},
+            {"feature": "Dashboard, carte et tendances essentielles", "is_included": True},
+            {"feature": "3 analyses de risque par mois", "is_included": True},
+            {"feature": "Décision et niveau de risque simplifié", "is_included": True},
         ],
     },
     {
         "id": "pro",
         "name": "Pro",
         "price_monthly_eur": 30,
-        "description": "Pour analyser, comparer et exporter les donnees utiles aux decisions.",
+        "description": "Pour analyser, expliquer et comparer les risques.",
         "features": [
-            {"feature": "Dashboards complets avec lectures pays, agences et historique", "is_included": True},
-            {"feature": "Briefing avance avec angles d'analyse exploitables", "is_included": True},
-            {"feature": "Graphiques recommandes pour presenter rapidement les tendances", "is_included": True},
-            {"feature": "Exports CSV pour notebooks, reporting et analyses ML", "is_included": True},
-            {"feature": "Signaux de veille et recommandations Premium", "is_included": False},
+            {"feature": "Analyses de risque illimitées", "is_included": True},
+            {"feature": "Score calibré et fourchette d'incertitude", "is_included": True},
+            {"feature": "Explications et fiabilité historique", "is_included": True},
+            {"feature": "Comparateur et exports CSV", "is_included": True},
         ],
     },
     {
         "id": "premium",
         "name": "Premium",
         "price_monthly_eur": 100,
-        "description": "Pour anticiper les signaux faibles et transformer Artemis en cockpit de veille.",
+        "description": "Pour surveiller les missions et produire des rapports professionnels.",
         "features": [
-            {"feature": "Toutes les analyses Pro et exports CSV", "is_included": True},
-            {"feature": "Briefings enrichis pour lectures executives et editoriales", "is_included": True},
-            {"feature": "Signaux de veille sur ruptures de croissance et leaders emergents", "is_included": True},
-            {"feature": "Parcours recommande entre dashboards, carte et Space Race", "is_included": True},
-            {"feature": "Priorite aux futures couches ML et alertes avancees", "is_included": True},
+            {"feature": "Toutes les fonctions Pro", "is_included": True},
+            {"feature": "Watchlist et alertes de risque", "is_included": True},
+            {"feature": "Simulateur de scénarios", "is_included": True},
+            {"feature": "Rapports PDF et historique", "is_included": True},
+            {"feature": "Monitoring détaillé du modèle", "is_included": True},
         ],
     },
 ]
@@ -243,3 +240,19 @@ def can_export(profile: dict | None) -> bool:
 def can_access_advanced_briefing(profile: dict | None) -> bool:
     """Briefing enrichi disponible à partir du plan Pro."""
     return can_access_pro_features(profile)
+
+
+def update_subscription_plan(user_id: str, subscription_plan: str) -> None:
+    """Change le plan d'un profil dans le mode de démonstration."""
+    if subscription_plan not in VALID_SUBSCRIPTION_PLANS:
+        raise ValueError(f"Plan d'abonnement invalide: {subscription_plan}")
+
+    query = """
+        update public.user_profiles
+        set subscription_plan = %s, updated_at = now()
+        where id = %s;
+    """
+    with connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, (subscription_plan, user_id))
+        conn.commit()

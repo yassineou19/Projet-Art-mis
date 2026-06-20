@@ -57,6 +57,16 @@ else:
             title="Space Race",
             icon=":material/emoji_events:",
         ),
+        st.Page(
+            "pages/7_Prediction_ML.py",
+            title="Prédiction ML",
+            icon=":material/model_training:",
+        ),
+        st.Page(
+            "pages/8_Abonnements.py",
+            title="Abonnements",
+            icon=":material/workspace_premium:",
+        ),
     ]
 
     pages = {"Analytics": public_pages}
