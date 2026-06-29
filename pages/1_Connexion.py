@@ -827,10 +827,6 @@ with right:
                                 "Si ce compte existe, un email de reinitialisation vient d'etre envoye."
                             )
 
-            st.markdown('<div class="or-divider">ou</div>', unsafe_allow_html=True)
-            if st.button("G  Continuer avec Google", use_container_width=True):
-                st.info("La connexion Google n'est pas encore configuree.")
-
         with tab_signup:
             st.markdown(
                 """
