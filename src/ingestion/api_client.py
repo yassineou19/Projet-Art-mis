@@ -12,6 +12,9 @@ import requests
 API_KEY = os.getenv("THESPACEDEVS_API_KEY")
 BASE_URL = "https://ll.thespacedevs.com/2.3.0"
 THROTTLE_URL = f"{BASE_URL}/api-throttle/"
+REQUEST_TIMEOUT_SECONDS = int(os.getenv("THESPACEDEVS_TIMEOUT_SECONDS", "60"))
+REQUEST_MAX_ATTEMPTS = int(os.getenv("THESPACEDEVS_MAX_ATTEMPTS", "3"))
+RETRYABLE_STATUS_CODES = {500, 502, 503, 504}
 
 
 @dataclass(frozen=True)
@@ -32,55 +35,65 @@ def auth_headers() -> dict[str, str]:
     return {"Authorization": f"Token {API_KEY}"}
 
 
+def _get_json(url: str, params: dict | None = None) -> dict:
+    last_error: Exception | None = None
+    for attempt in range(1, REQUEST_MAX_ATTEMPTS + 1):
+        try:
+            response = requests.get(
+                url,
+                params=params,
+                headers=auth_headers(),
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+            if response.status_code in RETRYABLE_STATUS_CODES and attempt < REQUEST_MAX_ATTEMPTS:
+                time.sleep(5 * attempt)
+                continue
+            response.raise_for_status()
+            return response.json()
+        except (requests.Timeout, requests.ConnectionError) as error:
+            last_error = error
+            if attempt >= REQUEST_MAX_ATTEMPTS:
+                raise
+            print(
+                "The Space Devs API request failed temporarily "
+                f"({type(error).__name__}). Retry {attempt}/{REQUEST_MAX_ATTEMPTS}."
+            )
+            time.sleep(5 * attempt)
+
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("The Space Devs API request failed without a response.")
+
+
 def fetch_launches(limit: int = 260, offset: int = 0) -> dict:
     """Récupère une seule page de lancements."""
-    response = requests.get(
+    return _get_json(
         f"{BASE_URL}/launches/",
         params={
             "limit": limit,
             "offset": offset,
         },
-        headers=auth_headers(),
-        timeout=30,
     )
-
-    response.raise_for_status()
-
-    return response.json()
 
 
 def fetch_previous_launches(limit: int = 100) -> dict:
     """Récupère les derniers lancements passés."""
-    response = requests.get(
+    return _get_json(
         f"{BASE_URL}/launches/previous/",
         params={"limit": limit},
-        headers=auth_headers(),
-        timeout=30,
     )
-
-    response.raise_for_status()
-
-    return response.json()
 
 
 def fetch_upcoming_launches(limit: int = 100) -> dict:
     """Récupère les prochains lancements planifiés."""
-    response = requests.get(
+    return _get_json(
         f"{BASE_URL}/launches/upcoming/",
         params={"limit": limit},
-        headers=auth_headers(),
-        timeout=30,
     )
-
-    response.raise_for_status()
-
-    return response.json()
 
 
 def get_api_quota() -> ApiQuota:
-    response = requests.get(THROTTLE_URL, headers=auth_headers(), timeout=30)
-    response.raise_for_status()
-    payload = response.json()
+    payload = _get_json(THROTTLE_URL)
     return ApiQuota(
         request_limit=int(payload.get("your_request_limit", 15)),
         frequency_seconds=int(payload.get("limit_frequency_secs", 3600)),
