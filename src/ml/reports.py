@@ -1,10 +1,11 @@
 """Rapport PDF d'une analyse de risque Artemis."""
 
+from html import escape
 from io import BytesIO
 
 import pandas as pd
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
@@ -60,6 +61,27 @@ def build_prediction_pdf(
             spaceAfter=2 * mm,
         )
     )
+    styles.add(
+        ParagraphStyle(
+            name="ArtemisTableHeader",
+            parent=styles["BodyText"],
+            fontName="Helvetica-Bold",
+            fontSize=9,
+            leading=11,
+            textColor=colors.HexColor("#312E81"),
+            alignment=TA_LEFT,
+        )
+    )
+    styles.add(
+        ParagraphStyle(
+            name="ArtemisTableCell",
+            parent=styles["BodyText"],
+            fontName="Helvetica",
+            fontSize=9,
+            leading=11,
+            alignment=TA_LEFT,
+        )
+    )
 
     risk = float(prediction["risk_score"])
     lower = float(prediction["risk_lower"])
@@ -102,27 +124,32 @@ def build_prediction_pdf(
     story.extend([summary_table, Paragraph("Fiabilite historique", styles["ArtemisSection"])])
 
     reliability_rows = [
-        ["Reference", "Tentatives", "Echecs", "Fiabilite estimee"],
+        [_table_cell(value, styles["ArtemisTableHeader"]) for value in ["Reference", "Tentatives", "Echecs", "Fiabilite estimee"]],
         [
-            f"Fusee: {rocket_reliability['label']}",
-            str(rocket_reliability["attempts"]),
-            str(rocket_reliability["failures"]),
-            f"{rocket_reliability['success_rate'] * 100:.1f}%",
+            _table_cell(f"Fusee: {rocket_reliability['label']}", styles["ArtemisTableCell"]),
+            _table_cell(str(rocket_reliability["attempts"]), styles["ArtemisTableCell"]),
+            _table_cell(str(rocket_reliability["failures"]), styles["ArtemisTableCell"]),
+            _table_cell(f"{rocket_reliability['success_rate'] * 100:.1f}%", styles["ArtemisTableCell"]),
         ],
         [
-            f"Agence: {agency_reliability['label']}",
-            str(agency_reliability["attempts"]),
-            str(agency_reliability["failures"]),
-            f"{agency_reliability['success_rate'] * 100:.1f}%",
+            _table_cell(f"Agence: {agency_reliability['label']}", styles["ArtemisTableCell"]),
+            _table_cell(str(agency_reliability["attempts"]), styles["ArtemisTableCell"]),
+            _table_cell(str(agency_reliability["failures"]), styles["ArtemisTableCell"]),
+            _table_cell(f"{agency_reliability['success_rate'] * 100:.1f}%", styles["ArtemisTableCell"]),
         ],
     ]
     reliability_table = Table(reliability_rows, colWidths=[65 * mm, 30 * mm, 25 * mm, 40 * mm])
     reliability_table.setStyle(_standard_table_style())
     story.extend([reliability_table, Paragraph("Facteurs principaux", styles["ArtemisSection"])])
 
-    driver_rows = [["Facteur", "Effet"]]
+    driver_rows = [[_table_cell("Facteur", styles["ArtemisTableHeader"]), _table_cell("Effet", styles["ArtemisTableHeader"])]]
     for row in drivers.itertuples(index=False):
-        driver_rows.append([str(row.factor), str(row.direction)])
+        driver_rows.append(
+            [
+                _table_cell(str(row.factor), styles["ArtemisTableCell"]),
+                _table_cell(str(row.direction), styles["ArtemisTableCell"]),
+            ]
+        )
     driver_table = Table(driver_rows, colWidths=[105 * mm, 55 * mm])
     driver_table.setStyle(_standard_table_style())
     story.extend(
@@ -138,6 +165,10 @@ def build_prediction_pdf(
     )
     document.build(story, onFirstPage=_draw_footer, onLaterPages=_draw_footer)
     return output.getvalue()
+
+
+def _table_cell(value: str, style: ParagraphStyle) -> Paragraph:
+    return Paragraph(escape(str(value)), style)
 
 
 def _standard_table_style() -> TableStyle:
