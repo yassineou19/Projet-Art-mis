@@ -15,6 +15,7 @@ from src.profiles import (
     load_subscription_plans,
     load_user_profile,
 )
+from src.database import connection
 
 
 html(
@@ -122,6 +123,65 @@ def get_signup_subscription_plans() -> list[dict]:
         return load_subscription_plans()
     except Exception:
         return FALLBACK_SUBSCRIPTION_PLANS
+
+
+def format_stat(value: int) -> str:
+    return f"{value:,}".replace(",", " ")
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def load_auth_page_stats() -> dict:
+    """Charge les chiffres de preuve sociale depuis les données ingérées."""
+    query = """
+        SELECT
+            count(*)::int AS launches,
+            count(distinct raw.payload->'pad'->'location'->'country'->>'name')
+                FILTER (
+                    WHERE coalesce(raw.payload->'pad'->'location'->'country'->>'name', '')
+                          NOT IN ('', 'Unknown')
+                )::int AS countries,
+            count(distinct raw.payload->'pad'->>'name')
+                FILTER (
+                    WHERE coalesce(raw.payload->'pad'->>'name', '')
+                          NOT IN ('', 'Unknown')
+                )::int AS launch_sites,
+            min(clean.launch_year)::int AS min_year,
+            max(clean.launch_year)::int AS max_year
+        FROM dev.launches_clean AS clean
+        LEFT JOIN dev.launches_raw AS raw
+          ON raw.launch_id = clean.launch_id
+        WHERE clean.launch_year IS NOT NULL;
+    """
+
+    fallback = {
+        "launches": 7657,
+        "countries": 21,
+        "launch_sites": 210,
+        "min_year": 1957,
+        "max_year": 2026,
+    }
+
+    try:
+        with connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(query)
+                row = cur.fetchone()
+    except Exception:
+        row = None
+
+    if not row:
+        stats = fallback
+    else:
+        stats = {
+            "launches": row[0] or fallback["launches"],
+            "countries": row[1] or fallback["countries"],
+            "launch_sites": row[2] or fallback["launch_sites"],
+            "min_year": row[3] or fallback["min_year"],
+            "max_year": row[4] or fallback["max_year"],
+        }
+
+    stats["history_years"] = stats["max_year"] - stats["min_year"] + 1
+    return stats
 
 
 def format_plan_option(plan: dict) -> str:
@@ -905,24 +965,32 @@ with right:
                     except Exception:
                         show_auth_error("Creation du compte")
 
+auth_stats = load_auth_page_stats()
+launches_count = format_stat(auth_stats["launches"])
+countries_count = format_stat(auth_stats["countries"])
+sites_count = format_stat(auth_stats["launch_sites"])
+min_year = int(auth_stats["min_year"])
+max_year = int(auth_stats["max_year"])
+history_years = int(auth_stats["history_years"])
+
 st.markdown(
-    """
+    f"""
     <div class="stats-bar">
       <div class="stat-item">
         <div class="stat-icon">↗</div>
-        <div><div class="stat-value purple">12,842</div><div class="stat-label">Lancements analyses<br>1957 - 2024</div></div>
+        <div><div class="stat-value purple">{launches_count}</div><div class="stat-label">Lancements analyses<br>{min_year} - {max_year}</div></div>
       </div>
       <div class="stat-item">
         <div class="stat-icon">◎</div>
-        <div><div class="stat-value purple">87</div><div class="stat-label">Pays actifs<br>dans le monde</div></div>
+        <div><div class="stat-value purple">{countries_count}</div><div class="stat-label">Pays actifs<br>dans la base</div></div>
       </div>
       <div class="stat-item">
         <div class="stat-icon">⌂</div>
-        <div><div class="stat-value">247</div><div class="stat-label">Sites de lancement<br>repertories</div></div>
+        <div><div class="stat-value">{sites_count}</div><div class="stat-label">Sites de lancement<br>repertories</div></div>
       </div>
       <div class="stat-item">
         <div class="stat-icon">⌁</div>
-        <div><div class="stat-value">68 ans</div><div class="stat-label">De donnees historiques<br>consolidees</div></div>
+        <div><div class="stat-value">{history_years} ans</div><div class="stat-label">De donnees historiques<br>consolidees</div></div>
       </div>
     </div>
     <div class="artemis-footer">
