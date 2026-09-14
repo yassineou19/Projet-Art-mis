@@ -5,6 +5,7 @@ python-dotenv
 psycopg2-binary
 supabase
 requests
+scipy
 scikit-learn
 reportlab
 pypdf
